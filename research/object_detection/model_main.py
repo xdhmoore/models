@@ -23,6 +23,7 @@ from absl import flags
 import tensorflow.compat.v1 as tf
 
 from object_detection import model_lib
+from object_detection.utils import visualization_utils
 
 flags.DEFINE_string(
     'model_dir', None, 'Path to output model directory '
@@ -32,7 +33,7 @@ flags.DEFINE_string('pipeline_config_path', None, 'Path to pipeline config '
 flags.DEFINE_integer('num_train_steps', None, 'Number of train steps.')
 flags.DEFINE_boolean('eval_training_data', False,
                      'If training data should be evaluated for this job. Note '
-                     'that one call only use this in eval-only mode, and '
+                     'that one can only use this in eval-only mode, and '
                      '`checkpoint_dir` must be supplied.')
 flags.DEFINE_integer('sample_1_of_n_eval_examples', 1, 'Will sample one of '
                      'every n eval input examples, where n is provided.')
@@ -55,6 +56,15 @@ flags.DEFINE_integer(
 )
 FLAGS = flags.FLAGS
 
+#cd /vm/shark/dmoore14/repo/tensorflow/models/research
+#
+#python object_detection/model_main.py \
+#    --pipeline_config_path=/vm/shark/dmoore14/repo/jobs/mobilenet/ssd_mobilenet_v1_pets.config \
+#    --model_dir=/vm/shark/dmoore14/repo/jobs/mobilenet/model_dir \
+#    --num_train_steps=1000 \
+#    --sample_1_of_n_eval_examples=1 \
+#    --alsologtostderr \
+#    &>/home/dmoore14/thesis/repo/logs/job_mobilenet_$(date +%m%d)_1000_TRAIN_STEPS}_first-time.log
 
 def main(unused_argv):
   flags.mark_flag_as_required('model_dir')
@@ -76,6 +86,8 @@ def main(unused_argv):
   train_steps = train_and_eval_dict['train_steps']
 
   if FLAGS.checkpoint_dir:
+
+    # If we want to run eval on the training data
     if FLAGS.eval_training_data:
       name = 'training_data'
       input_fn = eval_on_train_input_fn
@@ -86,6 +98,7 @@ def main(unused_argv):
     if FLAGS.run_once:
       estimator.evaluate(input_fn,
                          steps=None,
+                         hooks=
                          checkpoint_path=tf.train.latest_checkpoint(
                              FLAGS.checkpoint_dir))
     else:

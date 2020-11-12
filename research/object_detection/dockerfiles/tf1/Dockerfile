@@ -1,6 +1,11 @@
+
+
+
 FROM tensorflow/tensorflow:1.15.2-gpu-py3
 
 ARG DEBIAN_FRONTEND=noninteractive
+
+# TODO lock in the version on all this stuff
 
 # Install apt dependencies
 RUN apt-get update && apt-get install -y \
@@ -25,11 +30,6 @@ RUN useradd -ms /bin/bash tensorflow
 USER tensorflow
 WORKDIR /home/tensorflow
 
-# Copy this version of of the model garden into the image
-COPY --chown=tensorflow . /home/tensorflow/models
-
-# Compile protobuf configs
-RUN (cd /home/tensorflow/models/research/ && protoc object_detection/protos/*.proto --python_out=.)
 WORKDIR /home/tensorflow/models/research/
 
 RUN cp object_detection/packages/tf1/setup.py ./
@@ -37,5 +37,18 @@ ENV PATH="/home/tensorflow/.local/bin:${PATH}"
 
 RUN python -m pip install --user -U pip
 RUN python -m pip install --user .
+# Install pip dependencies
+#RUN pip3 install --user absl-py
+#RUN pip3 install --user contextlib2
+#RUN pip3 install --user Cython
+#RUN pip3 install --user jupyter
+#RUN pip3 install --user matplotlib
+#RUN pip3 install --user pycocotools
+#RUN pip3 install --user tf-slim
+
+# These two steps are done outside and mounted now
+# COPY --chown=tensorflow . /home/tensorflow/models
+# RUN (cd /home/tensorflow/models/research/ && \
+#    protoc object_detection/protos/*.proto --python_out=.)
 
 ENV TF_CPP_MIN_LOG_LEVEL 3
