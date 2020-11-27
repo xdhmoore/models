@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+echo "Running bash" >&2
+
+exec bash "$@"

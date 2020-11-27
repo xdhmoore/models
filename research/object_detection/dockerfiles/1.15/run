@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# TODO use zsh
+
+[[ -z "$1" || ! -x "./run-${1}" ]] && echo "Please specify a command to run." >&2 && exit 1;
+
+cmd=$1
+shift
+
+exec ./run-${cmd} "$@"
+

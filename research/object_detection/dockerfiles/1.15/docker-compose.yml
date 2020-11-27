@@ -2,11 +2,13 @@ version: "3.8"
 services:
   tf-dev:
     build:
-      context: ../../../../
-      dockerfile: research/object_detection/dockerfiles/1.15/Dockerfile
+      context: ../../../
+      dockerfile: object_detection/dockerfiles/1.15/Dockerfile
     container_name: xdhm_tf_dev_ctnr
     volumes:
-      # RESUME this doesn't appear to be correct on the lhs
-      - .:/home/tensorflow/models
+      - ~/tf_data:/data
+      - ~/model_dir:/model_dir
+      #- ${PWD}/../../../../tf_data:/data
+      #- ${PWD}/../../../../model_dir:/model_dir
     image: xdhm_tf_dev_img
 
