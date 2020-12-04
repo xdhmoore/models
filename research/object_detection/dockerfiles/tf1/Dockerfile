@@ -46,32 +46,40 @@ RUN python -m pip install --user .
 
 # TODO should these two steps be done outside and mounted instead?
 # TODO this is currently copying all gzipped and unzipped data over
-COPY --chown=tensorflow . /home/tensorflow/models/research
+#COPY --chown=tensorflow . /home/tensorflow/models/research
 
-RUN (cd /home/tensorflow/models/research/ && \
-   protoc object_detection/protos/*.proto --python_out=.)
+# TODO add this step to the instructions for setup outside of docker
+#RUN (cd /home/tensorflow/models/research/ && \
+#   protoc object_detection/protos/*.proto --python_out=.)
+
+
+# RESUME: determine how to share /code directory but still compile protoc
+# Options:
+# 1) Keep as is
+# 2) put protoc before dockerfile runs
+# 3) put protoc when app starts
 
 # Reuse the layer from above but copy this onto it...?
-COPY --chown=tensorflow object_detection/dockerfiles/1.15/pipeline.config /home/tensorflow/pipeline.config
+#COPY --chown=tensorflow object_detection/dockerfiles/1.15/pipeline.config /home/tensorflow/pipeline.config
 
 # TODO put these in a folder
-COPY --chown=tensorflow object_detection/dockerfiles/1.15/run /home/tensorflow/run
-COPY --chown=tensorflow object_detection/dockerfiles/1.15/run-* /home/tensorflow/
+#COPY --chown=tensorflow object_detection/dockerfiles/1.15/run /home/tensorflow/run
+#COPY --chown=tensorflow object_detection/dockerfiles/1.15/run-* /home/tensorflow/
 
 #RUN chmod u+x /home/tensorflow/run
 #RUN chmod u+x /home/tensorflow/run-*
 
 ENV TF_CPP_MIN_LOG_LEVEL 3
 
-# RESUME run a short job of 20 steps and then determine how to get the results. put them on volume?
+# RESUME set up docker-compose to start up and then you can connect to running image
 # RESUME try using non-gpu docker image
 
 # TODO expose tensorboard port
 # EXPOSE 
 # TODO what's the point of this volume declaration?
-VOLUME ["/data", "/model_dir"]
+VOLUME ["/data", "/model_dir", "/home/tensorflow/models/research"]
 CMD ["shell"]
-ENTRYPOINT [ "/home/tensorflow/run" ]
+ENTRYPOINT [ "/home/tensorflow/models/research/object_detection/dockerfiles/1.15/run" ]
 #ENTRYPOINT [ "python3", "object_detection/model_main.py",  "--pipeline_config_path=pipeline.config",  "--model_dir=model_dir",  "--num_train_steps=1000",  "--sample_1_of_n_eval_examples=1",  "--alsologtostderr" ]
 
 

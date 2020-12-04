@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # TODO use zsh
 
-[[ -z "$1" || ! -x "./run-${1}" ]] && echo "Please specify a command to run." >&2 && exit 1;
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+# TODO different error message if an invalid command is given.
+
+[[ -z "$1" || ! -x "${DIR}/run-${1}" ]] && echo "Please specify a command to run." >&2 && exit 1;
 
 cmd=$1
 shift
 
-exec ./run-${cmd} "$@"
+exec "${DIR}/run-${cmd}" "$@"
 

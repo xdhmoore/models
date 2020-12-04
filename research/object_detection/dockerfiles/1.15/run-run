@@ -2,25 +2,12 @@
 
 echo "Running pipeline" >&2
 
-TENSORBOARD=
-while getopts "b" opt; do
-    case $opt in
-        b)
-            TENSORBOARD=1
-            ;;
-    esac
-done
-
 cd /home/tensorflow/models/research
-
-if [[ -n "$TENSORBOARD" ]]; then
-    tensorboard --port 8002 --logdir /model_dir
-fi
 
 # TODO use...gosudo? so that ctrl+C kills this
 # TODO pass in # of steps via command line
 $exec python3 object_detection/model_main.py \
-    --pipeline_config_path=/home/tensorflow/pipeline.config \
+    --pipeline_config_path=object_detection/dockerfiles/1.15/pipeline.config \
     --model_dir=/model_dir \
     --num_train_steps=20 \
     --sample_0_of_n_eval_examples=1 \

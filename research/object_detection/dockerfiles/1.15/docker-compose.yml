@@ -1,14 +1,29 @@
 version: "3.8"
 services:
-  tf-dev:
+  # TODO namespace these names
+  pipeline:
     build:
       context: ../../../
       dockerfile: object_detection/dockerfiles/1.15/Dockerfile
     container_name: xdhm_tf_dev_ctnr
+    # TODO possible to load these locations from a user-specific config file?
     volumes:
-      - ~/tf_data:/data
+      # Input data
+      - ~/tf_data:/data:ro
+      # Output model
       - ~/model_dir:/model_dir
+      # Code
+      - ~/tensorflow_models/research:/home/tensorflow/models/research
       #- ${PWD}/../../../../tf_data:/data
       #- ${PWD}/../../../../model_dir:/model_dir
     image: xdhm_tf_dev_img
 
+  tensorboard:
+    image: tensorflow/tensorflow:1.15.2-py3
+    # TODO remove xdhm refs if others are to use this
+    container_name: xdhm_tensorboard
+    ports:
+      - "8001:8001"
+    volumes:
+      - ~/model_dir:/model_dir
+    entrypoint: [ "tensorboard", "--port", "8001", "--logdir", "/model_dir" ]
