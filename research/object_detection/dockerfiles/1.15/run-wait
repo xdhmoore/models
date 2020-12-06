@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+echo "Waiting..." >&2
+
+exec tail -f /dev/null

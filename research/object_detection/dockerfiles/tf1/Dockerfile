@@ -16,6 +16,11 @@ RUN apt-get update && apt-get install -y \
     python3-tk \
     wget
 
+# TODO remove:
+RUN apt-get update && apt-get install -y \
+    netcat \
+    iproute2
+
 # Install gcloud and gsutil commands
 # https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
 #RUN export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
@@ -43,6 +48,7 @@ RUN python -m pip install --user .
 #RUN pip3 install --user matplotlib
 #RUN pip3 install --user pycocotools
 #RUN pip3 install --user tf-slim
+RUN pip3 install --user debugpy
 
 # TODO should these two steps be done outside and mounted instead?
 # TODO this is currently copying all gzipped and unzipped data over
@@ -75,11 +81,17 @@ ENV TF_CPP_MIN_LOG_LEVEL 3
 # RESUME try using non-gpu docker image
 
 # TODO expose tensorboard port
-# EXPOSE 
+# EXPOSE
 # TODO what's the point of this volume declaration?
 VOLUME ["/data", "/model_dir", "/home/tensorflow/models/research"]
-CMD ["shell"]
+
+USER root
+RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/1.15/run /usr/local/bin/run
+
+USER tensorflow
+
 ENTRYPOINT [ "/home/tensorflow/models/research/object_detection/dockerfiles/1.15/run" ]
+CMD ["shell"]
 #ENTRYPOINT [ "python3", "object_detection/model_main.py",  "--pipeline_config_path=pipeline.config",  "--model_dir=model_dir",  "--num_train_steps=1000",  "--sample_1_of_n_eval_examples=1",  "--alsologtostderr" ]
 
 
@@ -89,7 +101,7 @@ ENTRYPOINT [ "/home/tensorflow/models/research/object_detection/dockerfiles/1.15
 # run pipeline
 # tweak pipeline and run again
 # connect to box
-# 
+#
 
 # TODO add to instructions:
 # chmod ugo+w /host/model_dir

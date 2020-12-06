@@ -3,9 +3,18 @@ services:
   # TODO namespace these names
   pipeline:
     build:
+      # TODO this copies the whole repo into docker. maybe not the best. in particular it means your data set will get copied into docker on initalization
+      # aside from any copying done in the dockerfile. One method would be to use a .dockerignore file to ignore large data files in the repo.
       context: ../../../
       dockerfile: object_detection/dockerfiles/1.15/Dockerfile
+
+    # TODO improve the container and image names
     container_name: xdhm_tf_dev_ctnr
+    image: xdhm_tf_dev_img
+    command: wait
+    # TODO is it possible to turn this on/off along with the flag in run-run?
+    ports:
+      - "5678:5678"
     # TODO possible to load these locations from a user-specific config file?
     volumes:
       # Input data
@@ -16,7 +25,6 @@ services:
       - ~/tensorflow_models/research:/home/tensorflow/models/research
       #- ${PWD}/../../../../tf_data:/data
       #- ${PWD}/../../../../model_dir:/model_dir
-    image: xdhm_tf_dev_img
 
   tensorboard:
     image: tensorflow/tensorflow:1.15.2-py3

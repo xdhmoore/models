@@ -4,13 +4,16 @@ echo "Running pipeline" >&2
 
 cd /home/tensorflow/models/research
 
-# TODO use...gosudo? so that ctrl+C kills this
+# TODO use...gosu? so that ctrl+C kills this
 # TODO pass in # of steps via command line
-$exec python3 object_detection/model_main.py \
-    --pipeline_config_path=object_detection/dockerfiles/1.15/pipeline.config \
-    --model_dir=/model_dir \
-    --num_train_steps=20 \
-    --sample_0_of_n_eval_examples=1 \
-    --alsologtostderr
+# TODO make debug depend on a passed-in flag
+# If you don't have the 0.0.0.0 it'll only listen on localhost (local connections only) and you'll spend 3 hours confused
+$exec python3 -m debugpy --wait-for-client --listen 0.0.0.0:5678 \
+    object_detection/model_main.py \
+        --pipeline_config_path=object_detection/dockerfiles/1.15/pipeline.config \
+        --model_dir=/model_dir \
+        --num_train_steps=20 \
+        --sample_0_of_n_eval_examples=1 \
+        --alsologtostderr
 
 
