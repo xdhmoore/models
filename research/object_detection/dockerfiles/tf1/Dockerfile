@@ -1,6 +1,7 @@
+# TODO parameterize gpu/cpu
 #FROM tensorflow/tensorflow:1.15.2-gpu-py3
 FROM tensorflow/tensorflow:1.15.2-py3
-# TODO why does the GPU version work? It should fail.
+
 ARG DEBIAN_FRONTEND=noninteractive
 
 # TODO lock in the version on all this stuff
@@ -16,11 +17,7 @@ RUN apt-get update && apt-get install -y \
     python3-tk \
     wget
 
-# TODO remove:
-RUN apt-get update && apt-get install -y \
-    netcat \
-    iproute2
-
+# TODO parameterize
 # Install gcloud and gsutil commands
 # https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
 #RUN export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
@@ -33,6 +30,11 @@ RUN useradd -ms /bin/bash tensorflow
 USER tensorflow
 WORKDIR /home/tensorflow
 
+# Copy this version of of the model garden into the image
+COPY --chown=tensorflow . /home/tensorflow/models
+
+# Compile protobuf configs
+RUN (cd /home/tensorflow/models/research/ && protoc object_detection/protos/*.proto --python_out=.)
 WORKDIR /home/tensorflow/models/research/
 
 RUN cp object_detection/packages/tf1/setup.py ./
@@ -48,6 +50,7 @@ RUN python -m pip install --user .
 #RUN pip3 install --user matplotlib
 #RUN pip3 install --user pycocotools
 #RUN pip3 install --user tf-slim
+# TODO parameterize
 RUN pip3 install --user debugpy
 
 # TODO should these two steps be done outside and mounted instead?
@@ -83,9 +86,10 @@ ENV TF_CPP_MIN_LOG_LEVEL 3
 # TODO expose tensorboard port
 # EXPOSE
 # TODO what's the point of this volume declaration?
-VOLUME ["/data", "/model_dir", "/home/tensorflow/models/research"]
+VOLUME ["/data", "/model_dir" ]
 
 USER root
+# TODO clean up this and entrypoint paths
 RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run /usr/local/bin/run
 
 USER tensorflow

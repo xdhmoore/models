@@ -5,8 +5,8 @@ services:
     build:
       # TODO this copies the whole repo into docker. maybe not the best. in particular it means your data set will get copied into docker on initalization
       # aside from any copying done in the dockerfile. One method would be to use a .dockerignore file to ignore large data files in the repo.
-      context: ../../../
-      dockerfile: object_detection/dockerfiles/tf1/Dockerfile
+      context: ../../../../
+      dockerfile: research/object_detection/dockerfiles/tf1/Dockerfile
 
     # TODO improve the container and image names
     container_name: xdhm_tf_dev_ctnr
@@ -22,7 +22,8 @@ services:
       # Output model
       - ~/model_dir:/model_dir
       # Code
-      - ~/tensorflow_models/research:/home/tensorflow/models/research
+      # - ~/tensorflow_models/research:/home/tensorflow/models/research
+      # TODO do above paths in this style?
       #- ${PWD}/../../../../tf_data:/data
       #- ${PWD}/../../../../model_dir:/model_dir
 
