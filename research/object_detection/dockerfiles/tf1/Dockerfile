@@ -66,11 +66,11 @@ RUN pip3 install --user debugpy
 # 3) put protoc when app starts
 
 # Reuse the layer from above but copy this onto it...?
-#COPY --chown=tensorflow object_detection/dockerfiles/1.15/pipeline.config /home/tensorflow/pipeline.config
+#COPY --chown=tensorflow object_detection/dockerfiles/tf1/pipeline.config /home/tensorflow/pipeline.config
 
 # TODO put these in a folder
-#COPY --chown=tensorflow object_detection/dockerfiles/1.15/run /home/tensorflow/run
-#COPY --chown=tensorflow object_detection/dockerfiles/1.15/run-* /home/tensorflow/
+#COPY --chown=tensorflow object_detection/dockerfiles/tf1/run /home/tensorflow/run
+#COPY --chown=tensorflow object_detection/dockerfiles/tf1/run-* /home/tensorflow/
 
 #RUN chmod u+x /home/tensorflow/run
 #RUN chmod u+x /home/tensorflow/run-*
@@ -86,11 +86,11 @@ ENV TF_CPP_MIN_LOG_LEVEL 3
 VOLUME ["/data", "/model_dir", "/home/tensorflow/models/research"]
 
 USER root
-RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/1.15/run /usr/local/bin/run
+RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run /usr/local/bin/run
 
 USER tensorflow
 
-ENTRYPOINT [ "/home/tensorflow/models/research/object_detection/dockerfiles/1.15/run" ]
+ENTRYPOINT [ "/home/tensorflow/models/research/object_detection/dockerfiles/tf1/run" ]
 CMD ["shell"]
 #ENTRYPOINT [ "python3", "object_detection/model_main.py",  "--pipeline_config_path=pipeline.config",  "--model_dir=model_dir",  "--num_train_steps=1000",  "--sample_1_of_n_eval_examples=1",  "--alsologtostderr" ]
 

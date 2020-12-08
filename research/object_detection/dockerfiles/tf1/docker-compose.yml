@@ -6,7 +6,7 @@ services:
       # TODO this copies the whole repo into docker. maybe not the best. in particular it means your data set will get copied into docker on initalization
       # aside from any copying done in the dockerfile. One method would be to use a .dockerignore file to ignore large data files in the repo.
       context: ../../../
-      dockerfile: object_detection/dockerfiles/1.15/Dockerfile
+      dockerfile: object_detection/dockerfiles/tf1/Dockerfile
 
     # TODO improve the container and image names
     container_name: xdhm_tf_dev_ctnr
