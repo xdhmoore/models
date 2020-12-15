@@ -1,0 +1,13 @@
+{
+    //"dockerComposeFile": "research/object_detection/dockerfiles/tf1/docker-compose.yml",
+    "dockerFile": "research/object_detection/dockerfiles/tf1/Dockerfile",
+    "context": "research",
+
+    //"service": "pipeline",
+    //"workspaceFolder": "/home/tensorflow/models",
+    "extensions": ["ms-python.python", "ms-python.vscode-pylance", "ms-azuretools.vscode-docker"],
+    "postCreateCommand": "(cd research && cp object_detection/packages/tf1/setup.py ./ && python -m pip install --user . ) && python -m pip install pylint debugpy",
+
+    "initializeCommand": "cd research && protoc object_detection/protos/*.proto --python_out=.",
+
+}

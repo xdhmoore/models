@@ -98,7 +98,6 @@ def main(unused_argv):
     if FLAGS.run_once:
       estimator.evaluate(input_fn,
                          steps=None,
-                         hooks=
                          checkpoint_path=tf.train.latest_checkpoint(
                              FLAGS.checkpoint_dir))
     else:

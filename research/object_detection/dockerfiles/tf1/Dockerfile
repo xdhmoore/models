@@ -28,20 +28,24 @@ RUN apt-get update && apt-get install -y \
 # Add new user to avoid running as root
 RUN useradd -ms /bin/bash tensorflow
 USER tensorflow
-WORKDIR /home/tensorflow
+#WORKDIR /home/tensorflow
 
 # Copy this version of of the model garden into the image
-COPY --chown=tensorflow . /home/tensorflow/models
+#COPY --chown=tensorflow . /home/tensorflow/models
+#RUN rm -rf /home/tensorflow/.envrc
+#RUN rm -rf /home/tensorflow/.direnv
 
 # Compile protobuf configs
-RUN (cd /home/tensorflow/models/research/ && protoc object_detection/protos/*.proto --python_out=.)
+#RUN (cd /home/tensorflow/models/research/ && protoc object_detection/protos/*.proto --python_out=.)
 WORKDIR /home/tensorflow/models/research/
 
-RUN cp object_detection/packages/tf1/setup.py ./
+# TODO does this really need to be copied to work?
+#RUN cp object_detection/packages/tf1/setup.py ./
 ENV PATH="/home/tensorflow/.local/bin:${PATH}"
-
 RUN python -m pip install --user -U pip
-RUN python -m pip install --user .
+# TODO add this line back:
+#RUN python -m pip install --user .
+
 # Install pip dependencies
 #RUN pip3 install --user absl-py
 #RUN pip3 install --user contextlib2
@@ -50,8 +54,6 @@ RUN python -m pip install --user .
 #RUN pip3 install --user matplotlib
 #RUN pip3 install --user pycocotools
 #RUN pip3 install --user tf-slim
-# TODO parameterize
-RUN pip3 install --user debugpy
 
 # TODO should these two steps be done outside and mounted instead?
 # TODO this is currently copying all gzipped and unzipped data over
@@ -95,7 +97,7 @@ RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run 
 USER tensorflow
 
 ENTRYPOINT [ "/home/tensorflow/models/research/object_detection/dockerfiles/tf1/run" ]
-CMD ["shell"]
+CMD ["wait"]
 #ENTRYPOINT [ "python3", "object_detection/model_main.py",  "--pipeline_config_path=pipeline.config",  "--model_dir=model_dir",  "--num_train_steps=1000",  "--sample_1_of_n_eval_examples=1",  "--alsologtostderr" ]
 
 
