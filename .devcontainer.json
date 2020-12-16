@@ -1,13 +1,28 @@
 {
+    // Run on host first
+    "initializeCommand": "cd research && protoc object_detection/protos/*.proto --python_out=.",
+
+
     //"dockerComposeFile": "research/object_detection/dockerfiles/tf1/docker-compose.yml",
     "dockerFile": "research/object_detection/dockerfiles/tf1/Dockerfile",
     "context": "research",
 
-    //"service": "pipeline",
-    //"workspaceFolder": "/home/tensorflow/models",
+    "mounts": [
+        // TODO change consistency settings to improve performance?
+        // TODO use env vars to set these source and model directories, like TFM_MODEL_DIR, TFM_DATA_DIR
+        "type=bind,src=/home/uuster/model_dir,dst=/model_dir,consistency=delegated",
+        "type=bind,src=/home/uuster/tf_data,dst=/data,readonly", 
+    ],
+    // TODO change consistency settings to improve performance?
+    // TODO use env vars to set these source and model directories, like TFM_MODEL_DIR, TFM_DATA_DIR, PWD?
+    "workspaceMount": "type=bind,src=/home/uuster/tensorflow_models,dst=/home/tensorflow/models",
+    "workspaceFolder": "/home/tensorflow/models",
+
     "extensions": ["ms-python.python", "ms-python.vscode-pylance", "ms-azuretools.vscode-docker"],
+     
+    // TODO should some of this happen on every update, not just create?
+    // TODO this really slows down the startup time. Is there a way to download the external requirements first in docker-land? Or use a mounted pip cache?
     "postCreateCommand": "(cd research && cp object_detection/packages/tf1/setup.py ./ && python -m pip install --user . ) && python -m pip install pylint debugpy",
 
-    "initializeCommand": "cd research && protoc object_detection/protos/*.proto --python_out=.",
 
 }

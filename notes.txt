@@ -1,0 +1,33 @@
+### Invocations of model_main ###
+
+# The eval_on_train_input_fn is a copy of the train_input_fn, but with an eval_config, so it points to training data.
+# But the eval_input_fn is configured separately in the config file to point to eval data.
+
+# EVAL ONLY
+# This seems to be actually an "evaluate mode" flag. If you set the checkpoint_dir, it will do evals only, not training.
+if FLAGS.checkpoint_dir not empty
+    # Either evaluate only training data using the training input readers pointing at 'train' data
+    if FLAGS.eval_training_data == true
+        # Run once through all data, I think.
+        if FLAGS.run_once == true
+            estimator.evaluate(eval_on_train_input_fn, steps=None, checkpoint_path=tf.train.latest_checkpoint(FLAGS.checkpoint_dir))
+        else:
+            # DON'T CARE - this is for running and watching a directory while another job adds new checkpoints to it I think
+            model_lib.continuous_eval(estimator, FLAGS.checkpoint_dir, eval_on_train_input_fn, train_steps, 'training_data', FLAGS.max_eval_retries)
+    # Or evaluate only validation/evaluation data as configured in config file (in my case named 'val')
+    else:
+        # Run once through all data, I think.
+        if FLAGS.run_once == true
+            estimator.evaluate(eval_input_fns[0], steps=None, checkpoint_path=tf.train.latest_checkpoint(FLAGS.checkpoint_dir))
+        else:
+            # DON'T CARE - this is for running and watching a directory while another job adds new checkpoints to it I think
+            model_lib.continuous_eval(estimator, FLAGS.checkpoint_dir, eval_input_fns[0], train_steps, 'validation_data', FLAGS.max_eval_retries)
+
+
+# TRAIN & EVAL
+# But I think this will also find a checkpoint in the model dir and start from where it left off?
+# RESUME how is eval done here? Which are used, the eval_on_train_input_fn or eval_input_fn?
+# RESUME how does train_and_evaluate use sessions. try it and see
+else:
+    train_spec, eval_specs = model_lib.create_train_and_eval_specs(train_input_fn, eval_input_fns, eval_on_train_input_fn, predict_input_fn, train_steps, eval_on_train_data=False)
+    tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])

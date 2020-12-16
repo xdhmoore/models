@@ -1,0 +1,4 @@
+### TODO ###
+* write better docs for model_main 
+* Figure out how the compat imports are special, @tf_export?
+* 

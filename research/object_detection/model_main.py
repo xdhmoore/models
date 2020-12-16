@@ -112,6 +112,23 @@ def main(unused_argv):
         train_steps,
         eval_on_train_data=False)
 
+    # TODO 
+    # TODO flesh this out and put it somewhere
+    class _StopAtSecsHook(tf.compat.v1.train.SessionRunHook):
+      """Stops given secs after begin is called."""
+
+      def __init__(self, stop_after_secs):
+        self._stop_after_secs = stop_after_secs
+        self._start_time = None
+
+      def begin(self):
+        self._start_time = time.time()
+
+      def after_run(self, run_context, run_values):
+        del run_values
+        if time.time() - self._start_time >= self._stop_after_secs:
+          run_context.request_stop()
+
     # Currently only a single Eval Spec is allowed.
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])
 

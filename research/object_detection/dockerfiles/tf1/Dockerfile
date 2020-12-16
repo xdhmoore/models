@@ -92,7 +92,9 @@ VOLUME ["/data", "/model_dir" ]
 
 USER root
 # TODO clean up this and entrypoint paths
-RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run /usr/local/bin/run
+#RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run /usr/local/bin/run
+# TODO this wont work before volume is bound
+RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run /home/tensorflow/.local/bin/run
 
 USER tensorflow
 
