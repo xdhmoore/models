@@ -1,4 +1,129 @@
+# TODO #
+
+### RESUME ###
+* Look over your images. Are they saved correctly?
+* do coco metrics have a min threshold?
+* Clean up your code a little - bare minimum
+* Go look at the OD analysis paper and the nature data set paper and see the graphs they made and
+    figure out all the data points you need to make those graphs
+    * Do you need to add any more code to get what you need?
+* Start looking at updating your 127x31 environment
+* Email Tedd about docker env?
+
+
+* Figure out how often get_image and add_image are run, (why won't they debug or log?). Where best to write image to file?
+
+
+OPTIONS:
+1. max out existing image saving, then save images to disk at the end 
+    * not enough memory to hold all images till end
+2. Alter code to save image immediately inside graph
+    * not sure about writing code with machine-specific side-effects inside graph 
+3. Altered version of #1 - save 200 or so images to results, then save to disk and delete from results
+
+
+
+
+
+
+
+
+
+* Edit config in model_lib.py 634 to try to save all images to TFB, see perf
+* If you can change the config to add *all* images to the results w/above, try to implement saving
+* to file *outside* the graph run if possible?
+
+Run eval "env DEBUG=1 run run" and step through the debugger to understand better what the hook's args are and
+    where the image results are available for writing. start debugging in "model_lib.model_fn" on 
+    model_lib.py:416
+
+Should I implement a child class of EvalMetricOpsVisualization that saves to file, maybe override existing child class?
+* How is this called? What is an op? and how does it compare with eval hooks?
+* How did the old legacy manage saving files within graph context? 
+
 ### TODO ###
-* write better docs for model_main 
-* Figure out how the compat imports are special, @tf_export?
-* 
+
+[ ] Implement hook that saves visualisations
+    [ ] fix my num classes config
+    [ ] get a working eval run. (train first? use existing checkpoint?)
+    [ ] implement basic hook that logs during eval, verify that it's run at the correct times
+    [ ] identify configuration you need to read in and read it in
+    [ ] figure out how to use visualization_utils inside hook to write images
+    [ ] (Optional) implement hook in train_and_eval
+    [ ] (Optional) implement hook in continuous_eval
+    [ ] (Optional) submit back to TF
+        [ ] (Optional) implement in TF 2
+        [ ] make sure I meet their contribution guidelines
+        [ ] Fix tests
+            [ ] get tests running
+            [ ] update existing tests
+            [ ] (Optional) write new tests?
+[ ] preserve unique ids of images in print outs
+[ ] write better docs for model_main argparse based on my "notes.txt"
+[ ] Figure out how the compat imports are special, @tf_export?
+[ ] Figure out how to use avoid copying one setup.py over another one during the build
+    * maybe copy in code to run setup.py and then volume mount on top of that dir anyway
+    * or have a script that after docker build runs container w/volume, runs setup.py, and commits the image
+    * maybe try using pip install -e to install setup inplace - would that cause vs code to ctrl click to local versions instead of those in site-packages?
+[ ] Make build more independent of devcontainer.json
+[ ] How do I add Ctrl+Click to source for tensorflow/estimator and tensorflow? add to extraPaths?
+[ ] Better story for reusing of pipeline config sample files and checking those into git - templates? env vars? ignored files/folders?
+[ ] Why is it logging everything twice?
+[ ] outstanding TODO items
+[ ] Look at all these logged warnings?
+[ ] run my stuff against different metrics protocols - https://github.com/tensorflow/models/blob/2986bcafb9eaa8fed4d78f17a04c4c5afc8f6691/research/object_detection/g3doc/evaluation_protocols.md
+[ ] make it so my dockerfile is runnable from vs code & on the cli outside vs code
+    * how?
+        * go back to copying in code volume into dockerfile and running setup.py in dockerfile
+        * create a script that mounts volume after build, runs setup.py, and checks in
+[ ] how to get model_lib to resolve to version in this file instead of the one installed with setup.py
+[ ] try with use_depthwise turned on
+[ ] print out anchor boxes?
+[ ] tweak anchor box generator settings
+[ ] increase image size
+[ ] try to make an overall diagram of how the SSD model works
+[ ] use height info from drones?
+[ ] get autocomplete working for tf and estimator (try replace all with the tensorflow_core._api... namespace)
+[ ] get debugger to use local files, not site-packages
+[ ] print anchor boxes?
+[ ] print progress bar or simiar for eval
+
+
+### Someday Maybe ###
+[ ] Upgrade SSD support for TF2 according to their help-wanted issues
+[ ] Upgrade my stuff to TF2
+[ ] Look into Unet
+[ ] quick look docs collapse some newlines. fault of docs or vs code? example eval_util.visualize_detection_results function docs
+[ ] the script can visualize other channels as well, though atm not sure what that would be for me (height would be uniform for the image, so not useful to visualize)
+[ ] write TF Board plugin for doing the kind of analysis I want to do?
+[ ] try input perf tuning based on what's in input_reader.proto, also, from colab tfrecord notebook:
+    Note: In general, you should shard your data across multiple files so that you can parallelize I/O (within a
+    single host or across multiple hosts). The rule of thumb is to have at least 10 times as many files as there will
+    be hosts reading data. At the same time, each file should be large enough (at least 10+MB and ideally 100MB+) so
+    that you benefit from I/O prefetching. For example, say you have X GBs of data and you plan to train on up to N
+    hosts. Ideally, you should shard the data to ~10*N files, as long as ~X/(10*N) is 10+ MBs (and ideally 100+ MBs).
+    If it is less than that, you might need to create fewer shards to trade off parallelism benefits and I/O
+    prefetching benefits.
+[ ] make an easy util for slicing tfrecord files
+[ ] can I implement all the broken visualization proto config settings?
+[ ] new proto config setting for saving more than num_visualizations to file, so you can save all
+    images to file without having to put them all into memory in the graph
+
+
+
+
+### Questions ###
+* What is batch normalization?
+* Why is use_depthwise == false?
+* Where is feature_extractor_config.HasField("num_layers") defined? Protobuf? Does that mean "has field" for all sub objects or just immediate fields? what other methods are available?
+* what does this do? (ssd_meta_arch.py):             tf.tile(tf.expand_dims(self._anchors.get(), 0), [image_shape[0], 1, 1]
+* what is tf.py_func?
+* understand "ops" better
+* where is the code that generates the evaluation results? does that run in the graph?
+* If I have batch size of 1 and I'm running run() for each image, isn't that recreating the graph each time or something. Isn't that slow?
+* Where is the visualization code using a single image and where is it using a batch of 1 and where multiple batches?
+    I guess it doesn't matter if it's a batch of one or just one, and it's never more than one batch
+* the estimator paper said running train() in a loop was an antipattern, that it recreated the graph every time and was slow. is this the case with running session.run() over and over
+    as this code seems to do? does it make it slow?
+* It would be neat if there was a live diagram of the graph that as you debugged, showed things getting added to the graph with recent changes highlighted
+* how to turn off autocomplete finishing things wrong when I hit enter at end of line

@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     python3-tk \
     wget
 
+
 # TODO parameterize
 # Install gcloud and gsutil commands
 # https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
@@ -90,16 +91,18 @@ ENV TF_CPP_MIN_LOG_LEVEL 3
 # TODO what's the point of this volume declaration?
 VOLUME ["/data", "/model_dir" ]
 
+#COPY --chown=tensorflow ./object_detection/dockerfiles/tf1/bin ./object_detection/dockerfiles/tf1/bin
+
 USER root
 # TODO clean up this and entrypoint paths
 #RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run /usr/local/bin/run
 # TODO this wont work before volume is bound
-RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/run /home/tensorflow/.local/bin/run
+RUN ln -s /home/tensorflow/models/research/object_detection/dockerfiles/tf1/bin/run /home/tensorflow/.local/bin/run
 
 USER tensorflow
 
-ENTRYPOINT [ "/home/tensorflow/models/research/object_detection/dockerfiles/tf1/run" ]
-CMD ["wait"]
+#ENTRYPOINT [ "run" ]
+#CMD ["wait"]
 #ENTRYPOINT [ "python3", "object_detection/model_main.py",  "--pipeline_config_path=pipeline.config",  "--model_dir=model_dir",  "--num_train_steps=1000",  "--sample_1_of_n_eval_examples=1",  "--alsologtostderr" ]
 
 

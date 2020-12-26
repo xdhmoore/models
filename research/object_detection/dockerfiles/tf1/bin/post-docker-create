@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+
+DIR="$(dirname "$(readlink -f "$0")")"
+# TODO maybe should define a global $TFM variable pointing to tensorflow/models...
+RESEARCH_DIR="${DIR}/../../../.."
+
+# This file runs the setup.py file for tf1 to install it locally. Since the source code, including setup.py, is
+# only available via bind mount, the installation has to be done in a running container instead of in the DockerFile
+# TODO instead of these shenanigans, maybe just do a build-time copy, setup.py run and then override it with a volume
+
+if [[ -n $DEV_MODE ]]; then
+    python -m pip install pylint debugpy
+fi
+
+echo "this is a test of stdout"
+echo "this is a test of sterr" >&2
+
+# TODO run this from run script?
+# TODO is there a way to avoid dirtying git by copying setup.py over other setup.py?
+
+cd "${RESEARCH_DIR}"
+
+cp object_detection/packages/tf1/setup.py ./
+
+# TODO use of -e is an experiment, since it doesn't seem to process everything specified in setup.py
+python -m pip install --user ${DEV_MODE:+-e} .
+
+if [[ -n $DEV_MODE ]]; then
+    # TODO this is hacky, cause i don't understand all of how pip -e works
+    # If using -e flag, the project setup.py doesn't seem to install slim/* packages at root level, so do it manually
+    python -m pip install -e ./slim
+fi
+

@@ -18,11 +18,18 @@
     "workspaceMount": "type=bind,src=/home/uuster/tensorflow_models,dst=/home/tensorflow/models",
     "workspaceFolder": "/home/tensorflow/models",
 
-    "extensions": ["ms-python.python", "ms-python.vscode-pylance", "ms-azuretools.vscode-docker"],
-     
+    "extensions": [
+        // Necessary?
+        "ms-python.python", "ms-python.vscode-pylance", "ms-azuretools.vscode-docker",
+        // Optional
+        "alefragnani.bookmarks", "tx19.let-me-google-that-for-you"
+    ],
+
+    // TODO this doesnt display errors when they occur
     // TODO should some of this happen on every update, not just create?
     // TODO this really slows down the startup time. Is there a way to download the external requirements first in docker-land? Or use a mounted pip cache?
-    "postCreateCommand": "(cd research && cp object_detection/packages/tf1/setup.py ./ && python -m pip install --user . ) && python -m pip install pylint debugpy",
+    // TODO use env variable for path
+    "postCreateCommand": "env DEV_MODE=1 ${containerWorkspaceFolder}/research/object_detection/dockerfiles/tf1/bin/post-docker-create",
 
 
 }

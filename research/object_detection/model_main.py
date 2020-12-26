@@ -69,7 +69,27 @@ FLAGS = flags.FLAGS
 def main(unused_argv):
   flags.mark_flag_as_required('model_dir')
   flags.mark_flag_as_required('pipeline_config_path')
-  config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir)
+  config = tf.estimator.RunConfig(
+    model_dir=FLAGS.model_dir,
+  )
+  # TODO
+  # TODO flesh this out and put it somewhere
+  class _RecordVisualiationsHook(tf.train.SessionRunHook):
+    """Records object detection box visualizations over images."""
+
+    def __init__(self):
+      self.counter = -1
+    def begin(self):
+      tf.logging.info('DHM: begin hook run')
+
+    def after_run(self, run_context, run_values):
+      self.counter += 1
+      # TODO use configured total
+      tf.logging.info(f'Eval run {self.counter}/738')
+      # TODO why did the one I copied from del run_values? Is this a memory thing I should be doing?
+      # del run_values
+      # if time.time() - self._start_time >= self._stop_after_secs:
+      #   run_context.request_stop()
 
   train_and_eval_dict = model_lib.create_estimator_and_inputs(
       run_config=config,
@@ -98,6 +118,7 @@ def main(unused_argv):
     if FLAGS.run_once:
       estimator.evaluate(input_fn,
                          steps=None,
+                         hooks=[_RecordVisualiationsHook()],
                          checkpoint_path=tf.train.latest_checkpoint(
                              FLAGS.checkpoint_dir))
     else:
@@ -110,24 +131,10 @@ def main(unused_argv):
         eval_on_train_input_fn,
         predict_input_fn,
         train_steps,
-        eval_on_train_data=False)
+        eval_on_train_data=False,
+        eval_hooks=None) #TODO pass in hooks
 
-    # TODO 
-    # TODO flesh this out and put it somewhere
-    class _StopAtSecsHook(tf.compat.v1.train.SessionRunHook):
-      """Stops given secs after begin is called."""
-
-      def __init__(self, stop_after_secs):
-        self._stop_after_secs = stop_after_secs
-        self._start_time = None
-
-      def begin(self):
-        self._start_time = time.time()
-
-      def after_run(self, run_context, run_values):
-        del run_values
-        if time.time() - self._start_time >= self._stop_after_secs:
-          run_context.request_stop()
+    #eval_specs[0].hooks.append(_RecordVisualiationsHook())
 
     # Currently only a single Eval Spec is allowed.
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])

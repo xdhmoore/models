@@ -11,7 +11,8 @@ services:
     # TODO improve the container and image names
     container_name: xdhm_tf_dev_ctnr
     image: xdhm_tf_dev_img
-    command: wait
+    command: sleep infinity
+    #command: wait
     # TODO is it possible to turn this on/off along with the flag in run-run?
     ports:
       - "5678:5678"
@@ -22,7 +23,7 @@ services:
       # Output model
       - ~/model_dir:/model_dir
       # Code
-      # - ~/tensorflow_models/research:/home/tensorflow/models/research
+      - ~/tensorflow_models/research:/home/tensorflow/models/research
       # TODO do above paths in this style?
       #- ${PWD}/../../../../tf_data:/data
       #- ${PWD}/../../../../model_dir:/model_dir
@@ -34,5 +35,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
+      # TODO make this configurable
+      #- ~/tf_data/starting_checkpoint:/model_dir
       - ~/model_dir:/model_dir
     entrypoint: [ "tensorboard", "--port", "8001", "--logdir", "/model_dir" ]

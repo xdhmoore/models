@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+set -e
+
+echo "Running pipeline" >&2
+# TODO rename this to "tfo"
+# usage: run tfo <pets|sharks> [-n<num steps>] [-d] [-m<model_dir>]
+# TODO params:
+# - pets or sharks
+# - num_steps
+# - debug on/off
+# - model_dir
+
+if [[ -n $DEBUG ]]; then
+    echo "Waiting for debugger to connect..." >&2
+fi
+
+cd /home/tensorflow/models/research
+
+#pip install debugpy -t /tmp ;
+
+# TODO use...gosu? so that ctrl+C kills this
+# TODO pass in # of steps via command line
+# TODO make debug depend on a passed-in flag or a special "debug" script that calls this
+# If you don't have the 0.0.0.0 it'll only listen on localhost (local connections only) and you'll spend 3 hours confused
+#$exec python3  /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 \
+
+# This is a train/eval run
+#exec python3 -m debugpy --wait-for-client --listen 0.0.0.0:5678 \
+#    object_detection/model_main.py \
+#        --pipeline_config_path=object_detection/dockerfiles/tf1/ssd_mobilenet_v1_sharks.config \
+#        --model_dir=/model_dir \
+#        --sample_1_of_n_eval_examples=1 \
+#        --alsologtostderr
+
+# This is eval only
+exec python3 ${DEBUG:+-m debugpy --wait-for-client --listen 0.0.0.0:5678} \
+    object_detection/model_main.py \
+        --pipeline_config_path=object_detection/dockerfiles/tf1/ssd_mobilenet_v1_sharks.config \
+        --model_dir=/model_dir \
+        --checkpoint_dir=/model_dir \
+        --run_once=True \
+        --alsologtostderr
+        # TODO does alsologtostderr do anything? I don't see where it is defined in tensorflow/models.
+        # Maybe it's a tensorflow thing?
+        #--num_train_steps=200 \
+
+# This is eval only
+#exec python3 -m debugpy --wait-for-client --listen 0.0.0.0:5678 \
+#    object_detection/model_main.py \
+#        --pipeline_config_path=object_detection/dockerfiles/tf1/ssd_mobilenet_v1_sharks.config \
+#        --model_dir=/model_dir \
+#        --checkpoint_dir=/data/starting_checkpoint \
+#        --run_once=True \
+#        --alsologtostderr \
+#        --eval_training_data=True \
+#        --sample_1_of_n_eval_on_train_examples=3 \
+#        # TODO does alsologtostderr do anything? I don't see where it is defined in tensorflow/models.
+#        # Maybe it's a tensorflow thing?
+#        #--num_train_steps=200 \

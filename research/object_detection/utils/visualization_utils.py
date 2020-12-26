@@ -37,6 +37,9 @@ import six
 from six.moves import range
 from six.moves import zip
 import tensorflow.compat.v1 as tf
+# TODO temporarily replace all in project
+#import tensorflow_core._api.v1.compat.v1 as tf
+import os
 
 from object_detection.core import keypoint_ops
 from object_detection.core import standard_fields as fields
@@ -668,6 +671,7 @@ def draw_side_by_side_evaluation_image(eval_dict,
   if input_data_fields.num_groundtruth_boxes in eval_dict:
     num_gt_boxes = tf.cast(eval_dict[input_data_fields.num_groundtruth_boxes],
                            tf.int32)
+  # DHM: This loops through a single image
   for indx in range(eval_dict[input_data_fields.original_image].shape[0]):
     instance_masks = None
     if detection_fields.detection_masks in eval_dict:
@@ -1375,12 +1379,29 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
     self._summary_name_prefix = summary_name_prefix
     self._keypoint_edges = keypoint_edges
     self._images = []
+    # TODO
+    self._dhm_counter = 0
 
   def clear(self):
     self._images = []
 
   def add_images(self, images):
     """Store a list of images, each with shape [1, H, W, C]."""
+
+    # TODO surely there's a way to do this in one call
+    tmp = np.squeeze(images, axis=0)
+    tmp = np.squeeze(tmp, axis=0)
+
+    tf.logging.warning(f'squeezed:{tmp.shape}')
+    tf.logging.warning(f'npd:{np.uint8(tmp).shape}')
+
+    # TODO pass in
+    # TODO create if doesn't exist
+    export_dir = "/model_dir/out_images"
+    export_path = os.path.join(export_dir, 'export-{}.png'.format(self._dhm_counter))
+    save_image_array_as_png(tmp, export_path)
+    self._dhm_counter+=1
+
     if len(self._images) >= self._max_examples_to_draw:
       return
 
