@@ -638,7 +638,8 @@ def create_model_fn(detection_model_fn, configs, hparams=None, use_tpu=False,
             max_boxes_to_draw=eval_config.max_num_boxes_to_visualize,
             min_score_thresh=eval_config.min_score_threshold,
             use_normalized_coordinates=False,
-            keypoint_edges=keypoint_edges or None)
+            keypoint_edges=keypoint_edges or None,
+            img_export_dir=eval_config.visualization_export_dir)
         vis_metric_ops = eval_metric_op_vis.get_estimator_eval_metric_ops(
             eval_dict)
 

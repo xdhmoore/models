@@ -40,6 +40,8 @@ import tensorflow.compat.v1 as tf
 # TODO temporarily replace all in project
 #import tensorflow_core._api.v1.compat.v1 as tf
 import os
+from pathlib import Path
+import sys
 
 from object_detection.core import keypoint_ops
 from object_detection.core import standard_fields as fields
@@ -1354,7 +1356,8 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
                min_score_thresh=0.2,
                use_normalized_coordinates=True,
                summary_name_prefix='evaluation_image',
-               keypoint_edges=None):
+               keypoint_edges=None,
+               img_export_dir=None):
     """Creates an EvalMetricOpsVisualization.
 
     Args:
@@ -1369,6 +1372,8 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
       keypoint_edges: A list of tuples with keypoint indices that specify which
         keypoints should be connected by an edge, e.g. [(0, 1), (2, 4)] draws
         edges from keypoint 0 to 1 and from keypoint 2 to 4.
+      img_export_dir: the output directory to which images are written.  If this is
+        empty (default), then images are not exported
     """
 
     self._category_index = category_index
@@ -1379,27 +1384,25 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
     self._summary_name_prefix = summary_name_prefix
     self._keypoint_edges = keypoint_edges
     self._images = []
+    self._img_export_dir = img_export_dir
     # TODO
     self._dhm_counter = 0
 
   def clear(self):
     self._images = []
 
-  def add_images(self, images):
+  def add_images(self, images, key):
     """Store a list of images, each with shape [1, H, W, C]."""
 
-    # TODO surely there's a way to do this in one call
-    tmp = np.squeeze(images, axis=0)
-    tmp = np.squeeze(tmp, axis=0)
-
-    tf.logging.warning(f'squeezed:{tmp.shape}')
-    tf.logging.warning(f'npd:{np.uint8(tmp).shape}')
-
     # TODO pass in
-    # TODO create if doesn't exist
-    export_dir = "/model_dir/out_images"
-    export_path = os.path.join(export_dir, 'export-{}.png'.format(self._dhm_counter))
-    save_image_array_as_png(tmp, export_path)
+    if self._img_export_dir:
+      Path(self._img_export_dir).mkdir(exist_ok=True)
+
+      # TODO join using pathlib then it's 1 fewer import
+      export_path = os.path.join(self._img_export_dir, 'export-{}.png'.format(key))
+      # TODO measure how slow this is
+      # TODO this appears to be synchronous. is that a problem?
+      save_image_array_as_png(np.squeeze(images, axis=(0,1)), export_path)
     self._dhm_counter+=1
 
     if len(self._images) >= self._max_examples_to_draw:
@@ -1462,6 +1465,9 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
     if self._max_examples_to_draw == 0:
       return {}
     images = self.images_from_evaluation_dict(eval_dict)
+    # TODO use keep_image_id_for_visualization_export config to decide what to use
+    key = tf.strings.unicode_encode(eval_dict[fields.DetectionResultFields.key], 'UTF-8')
+    inkey = eval_dict[fields.InputDataFields.key]
 
     def get_images():
       """Returns a list of images, padded to self._max_images_to_draw."""
@@ -1479,10 +1485,13 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
           lambda: tf.constant(''))
 
     if tf.executing_eagerly():
-      update_op = self.add_images([[images[0]]])
+      update_op = self.add_images([[images[0]]], inkey) # TODO shouldn't this be [images[0]]?
       image_tensors = get_images()
     else:
-      update_op = tf.py_func(self.add_images, [[images[0]]], [])
+      print_op = tf.print(inkey, output_stream=sys.stdout)
+      #print_op2 = tf.print(inkey + "-2", output_stream=sys.stdout)
+      with tf.control_dependencies([print_op]):
+        update_op = tf.py_func(self.add_images, [[images[0]], inkey], [])
       image_tensors = tf.py_func(
           get_images, [], [tf.uint8] * self._max_examples_to_draw)
     eval_metric_ops = {}
@@ -1518,7 +1527,8 @@ class VisualizeSingleFrameDetections(EvalMetricOpsVisualization):
                min_score_thresh=0.2,
                use_normalized_coordinates=True,
                summary_name_prefix='Detections_Left_Groundtruth_Right',
-               keypoint_edges=None):
+               keypoint_edges=None,
+               img_export_dir=None):
     super(VisualizeSingleFrameDetections, self).__init__(
         category_index=category_index,
         max_examples_to_draw=max_examples_to_draw,
@@ -1526,7 +1536,8 @@ class VisualizeSingleFrameDetections(EvalMetricOpsVisualization):
         min_score_thresh=min_score_thresh,
         use_normalized_coordinates=use_normalized_coordinates,
         summary_name_prefix=summary_name_prefix,
-        keypoint_edges=keypoint_edges)
+        keypoint_edges=keypoint_edges,
+        img_export_dir=img_export_dir)
 
   def images_from_evaluation_dict(self, eval_dict):
     return draw_side_by_side_evaluation_image(eval_dict, self._category_index,

@@ -27,7 +27,7 @@ from object_detection.utils import json_utils
 from object_detection.utils import np_mask_ops
 from object_detection.utils import object_detection_evaluation
 
-
+# TODO search for is my code using this? try this out
 class CocoDetectionEvaluator(object_detection_evaluation.DetectionEvaluator):
   """Class to evaluate COCO detection metrics."""
 
@@ -239,6 +239,7 @@ class CocoDetectionEvaluator(object_detection_evaluation.DetectionEvaluator):
               detection_keypoints=detection_keypoints))
     self._image_ids[image_id] = True
 
+  # TODO use this
   def dump_detections_to_json_file(self, json_output_path):
     """Saves the detections into json_output_path in the format used by MS COCO.
 
@@ -460,6 +461,7 @@ class CocoDetectionEvaluator(object_detection_evaluation.DetectionEvaluator):
       update ops must be run together and similarly all value ops must be run
       together to guarantee correct behaviour.
     """
+    # TODO somewhere in here (in update_op?) call to save json stuffs
     update_op = self.add_eval_dict(eval_dict)
     metric_names = ['DetectionBoxes_Precision/mAP',
                     'DetectionBoxes_Precision/mAP@.50IOU',

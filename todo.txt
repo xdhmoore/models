@@ -1,9 +1,21 @@
 # TODO #
 
 ### RESUME ###
-* Look over your images. Are they saved correctly?
+* Commit everything and push to github
+* Look at the obj detect analysis paper and see if you really need this sha256, and what other data you need
+
+* try to understand why reading in sha256 isn't working. Try to make a manual example of reading a
+  tfrecord with only like 3 items in it.
+
+
+* Rethink this. Is it worth it?:
+    * Clean up your code a little - bare minimum
+        * save by id:
+            * where is it getting the existing id from?
+                * write a script to try parsing one of your tfrecords manually
+                * write code to update my data to use labelbox Data Row Ids as the key field?
+
 * do coco metrics have a min threshold?
-* Clean up your code a little - bare minimum
 * Go look at the OD analysis paper and the nature data set paper and see the graphs they made and
     figure out all the data points you need to make those graphs
     * Do you need to add any more code to get what you need?
@@ -15,10 +27,10 @@
 
 
 OPTIONS:
-1. max out existing image saving, then save images to disk at the end 
+1. max out existing image saving, then save images to disk at the end
     * not enough memory to hold all images till end
 2. Alter code to save image immediately inside graph
-    * not sure about writing code with machine-specific side-effects inside graph 
+    * not sure about writing code with machine-specific side-effects inside graph
 3. Altered version of #1 - save 200 or so images to results, then save to disk and delete from results
 
 
@@ -34,12 +46,12 @@ OPTIONS:
 * to file *outside* the graph run if possible?
 
 Run eval "env DEBUG=1 run run" and step through the debugger to understand better what the hook's args are and
-    where the image results are available for writing. start debugging in "model_lib.model_fn" on 
+    where the image results are available for writing. start debugging in "model_lib.model_fn" on
     model_lib.py:416
 
 Should I implement a child class of EvalMetricOpsVisualization that saves to file, maybe override existing child class?
 * How is this called? What is an op? and how does it compare with eval hooks?
-* How did the old legacy manage saving files within graph context? 
+* How did the old legacy manage saving files within graph context?
 
 ### TODO ###
 

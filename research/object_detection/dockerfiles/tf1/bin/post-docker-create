@@ -11,7 +11,7 @@ RESEARCH_DIR="${DIR}/../../../.."
 # TODO instead of these shenanigans, maybe just do a build-time copy, setup.py run and then override it with a volume
 
 if [[ -n $DEV_MODE ]]; then
-    python -m pip install pylint debugpy
+    python -m pip install pylint debugpy mypy
 fi
 
 echo "this is a test of stdout"
