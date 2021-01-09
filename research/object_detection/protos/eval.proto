@@ -71,8 +71,9 @@ message EvalConfig {
   // Box color for visualizing groundtruth boxes.
   optional string groundtruth_box_visualization_color = 18 [default = "black"];
 
-  // Whether to keep image identifier in filename when exported to
-  // visualization_export_dir.
+  // Whether to use source_id field in filename when exported to
+  // visualization_export_dir. 'include_source_id' must 
+  // also be set in the eval input config for this to work.
   optional bool keep_image_id_for_visualization_export = 19 [default = false];
 
   // Whether to retain original images (i.e. not pre-processed) in the tensor

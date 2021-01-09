@@ -69,3 +69,23 @@ else:
     train_spec, eval_specs = model_lib.create_train_and_eval_specs(train_input_fn, eval_input_fns, eval_on_train_input_fn, predict_input_fn, train_steps, eval_on_train_data=False)
     # Because this only uses the first eval_spec, the eval_on_train spec (which is last) is not used
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])
+
+
+
+Tales of Key and Hash
+Okay, so 'key' is set in inital import in dataset_builder's mapping of
+decoder.decode across the dataset. (TFExampleDecoder.decode in
+tf_example.decoder.py which calls the slim tfexample_decoder.py's decoder).
+But then the transform_and_pad_input_data_fn input fn defined in inputs.py is also mapped over the
+dataset by dataset_builder, calling into:
+inputs.transform_and_pad_input_data_fn
+    then _get_features_dict(), which creates the hash key but doesn't pass through 'key'
+
+That mapping replaces those input elements with new
+ones, having only 'hash' and no 'key'. Then when model_lib.model_fn calls
+eval_util.result_dict_for_batched_example() it passes in array of
+[features['hash']] for the 'keys' arg. In that function the eval_dict is
+created, setting input_data_fields.key = passed in array with hash
+
+These mapping of functions across the dataset appear to happen by creating a new graph op, which I guess
+is why I don't seem to be able to debut them.

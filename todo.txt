@@ -1,7 +1,27 @@
 # TODO #
 
 ### RESUME ###
-* Commit everything and push to github
+
+* Use example in evaluation.py's _get_or_create_eval_step() as a way to figure out how to access the global eval step variable.
+    Maybe find somewhere else it's being used as another example.
+* Follow up on the TODO's in visualization_utils.py line 1500, etc.
+
+
+
+* Why is my example failing:
+    * Pipeline code never runs _ClassTensorHandler.tensors_to_items on "image/class/label"
+        but my example fails on that 
+    * Why doesn't pipeline ever run that function?
+
+*Look at your thesis update for what to do next
+    * to fix id import, compare with shas you generated? Find a way to run a single example or to debug/or print from the input threads (or change input to do in main thread?)
+
+
+* doublecheck pie chart negative number warnings
+* finish reading through graphs to understand
+* reread paper
+* start working on how to create VOC-like data, or matlab code that reads your given data?
+
 * Look at the obj detect analysis paper and see if you really need this sha256, and what other data you need
 
 * try to understand why reading in sha256 isn't working. Try to make a manual example of reading a
@@ -139,3 +159,9 @@ Should I implement a child class of EvalMetricOpsVisualization that saves to fil
     as this code seems to do? does it make it slow?
 * It would be neat if there was a live diagram of the graph that as you debugged, showed things getting added to the graph with recent changes highlighted
 * how to turn off autocomplete finishing things wrong when I hit enter at end of line
+* what does use_display_name do?
+* what does load_track_id do?
+* use obj detection analysis combined with embedding visualizer: https://youtu.be/eBbEDRsCmv4?t=1067
+    https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin?hl=uk
+* Make a new model_dir each time by default 
+* fix this issue by tweaking to log the source_id: https://github.com/tensorflow/models/issues/8712

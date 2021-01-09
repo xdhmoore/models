@@ -39,7 +39,6 @@ from six.moves import zip
 import tensorflow.compat.v1 as tf
 # TODO temporarily replace all in project
 #import tensorflow_core._api.v1.compat.v1 as tf
-import os
 from pathlib import Path
 import sys
 
@@ -1357,7 +1356,8 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
                use_normalized_coordinates=True,
                summary_name_prefix='evaluation_image',
                keypoint_edges=None,
-               img_export_dir=None):
+               img_export_dir=None,
+               keep_img_id_for_img_export=False):
     """Creates an EvalMetricOpsVisualization.
 
     Args:
@@ -1374,6 +1374,8 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
         edges from keypoint 0 to 1 and from keypoint 2 to 4.
       img_export_dir: the output directory to which images are written.  If this is
         empty (default), then images are not exported
+      keep_img_id_for_img_export: whether or not to use the source_id in the file names
+        of the saved image visualizations
     """
 
     self._category_index = category_index
@@ -1385,25 +1387,30 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
     self._keypoint_edges = keypoint_edges
     self._images = []
     self._img_export_dir = img_export_dir
-    # TODO
-    self._dhm_counter = 0
+    self._keep_img_id_for_img_export = keep_img_id_for_img_export
+    self._img_export_counter = 0
 
   def clear(self):
     self._images = []
 
-  def add_images(self, images, key):
+  def add_images(self, images, source_id):
     """Store a list of images, each with shape [1, H, W, C]."""
 
-    # TODO pass in
     if self._img_export_dir:
       Path(self._img_export_dir).mkdir(exist_ok=True)
 
-      # TODO join using pathlib then it's 1 fewer import
-      export_path = os.path.join(self._img_export_dir, 'export-{}.png'.format(key))
-      # TODO measure how slow this is
-      # TODO this appears to be synchronous. is that a problem?
-      save_image_array_as_png(np.squeeze(images, axis=(0,1)), export_path)
-    self._dhm_counter+=1
+      if source_id:
+        file_name = f"export-{source_id.decode('utf-8')}-{self._img_export_counter}.png"
+      else:
+        file_name = f"export-{self._img_export_counter}.png"
+
+      export_path = Path(self._img_export_dir, file_name)
+
+      save_image_array_as_png(np.squeeze(images, axis=(0,1)), str(export_path))
+      # TODO Is this safe? Best I can tell, this eval code is never distributed
+      # across multiple machines, but it may be run multiple times & reset the 
+      # counter during multiple evals during train_and_eval
+      self._img_export_counter += 1
 
     if len(self._images) >= self._max_examples_to_draw:
       return
@@ -1465,9 +1472,6 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
     if self._max_examples_to_draw == 0:
       return {}
     images = self.images_from_evaluation_dict(eval_dict)
-    # TODO use keep_image_id_for_visualization_export config to decide what to use
-    key = tf.strings.unicode_encode(eval_dict[fields.DetectionResultFields.key], 'UTF-8')
-    inkey = eval_dict[fields.InputDataFields.key]
 
     def get_images():
       """Returns a list of images, padded to self._max_images_to_draw."""
@@ -1484,14 +1488,19 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
           lambda: tf.summary.image(summary_name, image),
           lambda: tf.constant(''))
 
+    source_id = ''
+    if self._img_export_dir and self._keep_img_id_for_img_export:
+      if fields.InputDataFields.source_id not in eval_dict:
+        raise LookupError("eval_config.keep_image_id_for_visualization_export was "
+          "set but source_id is not available. Make sure that "
+          "eval_input_reader.include_source_id is set to true in the config.")
+      source_id = eval_dict[fields.InputDataFields.source_id][0]
+
     if tf.executing_eagerly():
-      update_op = self.add_images([[images[0]]], inkey) # TODO shouldn't this be [images[0]]?
+      update_op = self.add_images([[images[0]]], source_id) # TODO shouldn't this be [images[0]]?
       image_tensors = get_images()
     else:
-      print_op = tf.print(inkey, output_stream=sys.stdout)
-      #print_op2 = tf.print(inkey + "-2", output_stream=sys.stdout)
-      with tf.control_dependencies([print_op]):
-        update_op = tf.py_func(self.add_images, [[images[0]], inkey], [])
+      update_op = tf.py_func(self.add_images, [[images[0]], source_id], [])
       image_tensors = tf.py_func(
           get_images, [], [tf.uint8] * self._max_examples_to_draw)
     eval_metric_ops = {}
@@ -1528,7 +1537,8 @@ class VisualizeSingleFrameDetections(EvalMetricOpsVisualization):
                use_normalized_coordinates=True,
                summary_name_prefix='Detections_Left_Groundtruth_Right',
                keypoint_edges=None,
-               img_export_dir=None):
+               img_export_dir=None,
+               keep_img_id_for_img_export=False):
     super(VisualizeSingleFrameDetections, self).__init__(
         category_index=category_index,
         max_examples_to_draw=max_examples_to_draw,
@@ -1537,7 +1547,8 @@ class VisualizeSingleFrameDetections(EvalMetricOpsVisualization):
         use_normalized_coordinates=use_normalized_coordinates,
         summary_name_prefix=summary_name_prefix,
         keypoint_edges=keypoint_edges,
-        img_export_dir=img_export_dir)
+        img_export_dir=img_export_dir,
+        keep_img_id_for_img_export=keep_img_id_for_img_export)
 
   def images_from_evaluation_dict(self, eval_dict):
     return draw_side_by_side_evaluation_image(eval_dict, self._category_index,

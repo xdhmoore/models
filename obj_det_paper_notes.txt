@@ -1,0 +1,33 @@
+# vim:sw=2:ts=2:sts=2
+Notes on Object Detection Analysis Paper:
+
+
+They studied effects of:
+* occlusion
+* size
+* aspect ratio
+* visibility of parts
+* viewpoint
+* localization error
+* confusion with semantically similar objects
+* confusion with obher labeled objects
+* confusion with background
+
+I think Figure 6 would go well wtih a modified version of that Nature paper graph - show the frequency (y-axis) of each characteristic subset (occluded vs not occluded) (x-axis)
+
+How do I get the detection rank? Confidence score ranked?
+
+
+
+
+Their MatLab code
+Options
+* Make graphs with matlab code
+  * manually or with Labelbox tool create duplicate dataset in VOC format
+  * Write matlab code to read in existing format?
+    * matlab code to read in tf records?
+    * matlab code to read in json and saved images?
+* Make graphs using custom TF evaluator
+  * copy some or all graph-making code using matlab as example?
+* Try out existing evaluators to see if they do category-specific analysis
+  like you want
