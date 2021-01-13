@@ -673,7 +673,6 @@ def draw_side_by_side_evaluation_image(eval_dict,
   if input_data_fields.num_groundtruth_boxes in eval_dict:
     num_gt_boxes = tf.cast(eval_dict[input_data_fields.num_groundtruth_boxes],
                            tf.int32)
-  # DHM: This loops through a single image
   for indx in range(eval_dict[input_data_fields.original_image].shape[0]):
     instance_masks = None
     if detection_fields.detection_masks in eval_dict:

@@ -2,6 +2,12 @@
 
 ### RESUME ###
 
+* Finish PR submission
+    * try with train_and_eval, use new new-shark data
+    * double check pr & submit
+* submit new labelbox changes
+
+
 * Use example in evaluation.py's _get_or_create_eval_step() as a way to figure out how to access the global eval step variable.
     Maybe find somewhere else it's being used as another example.
 * Follow up on the TODO's in visualization_utils.py line 1500, etc.
@@ -10,7 +16,7 @@
 
 * Why is my example failing:
     * Pipeline code never runs _ClassTensorHandler.tensors_to_items on "image/class/label"
-        but my example fails on that 
+        but my example fails on that
     * Why doesn't pipeline ever run that function?
 
 *Look at your thesis update for what to do next
@@ -163,5 +169,5 @@ Should I implement a child class of EvalMetricOpsVisualization that saves to fil
 * what does load_track_id do?
 * use obj detection analysis combined with embedding visualizer: https://youtu.be/eBbEDRsCmv4?t=1067
     https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin?hl=uk
-* Make a new model_dir each time by default 
+* Make a new model_dir each time by default
 * fix this issue by tweaking to log the source_id: https://github.com/tensorflow/models/issues/8712

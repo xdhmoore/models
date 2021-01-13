@@ -22,6 +22,7 @@ from absl import flags
 
 import tensorflow.compat.v1 as tf
 
+
 from object_detection import model_lib
 from object_detection.utils import visualization_utils
 
