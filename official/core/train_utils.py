@@ -43,7 +43,7 @@ class BestCheckpointExporter:
   def __init__(self, export_dir: str, metric_name: str, metric_comp: str):
     """Initialization.
 
-    Arguments:
+    Args:
       export_dir: The directory that will contain exported checkpoints.
       metric_name: Indicates which metric to look at, when determining which
         result is better.
@@ -108,7 +108,7 @@ class BestCheckpointExporter:
 
     # Saving the best checkpoint might be interrupted if the job got killed.
     for file_to_remove in tf.io.gfile.glob(self.best_ckpt_path + '*'):
-      tf.io.gfile.rmtree(file_to_remove)
+      tf.io.gfile.remove(file_to_remove)
     checkpoint.save(self.best_ckpt_path)
 
   @property
@@ -134,7 +134,8 @@ def create_trainer(params: config_definitions.ExperimentConfig,
   """Create trainer."""
   logging.info('Running default trainer.')
   model = task.build_model()
-  optimizer = base_trainer.create_optimizer(params.trainer, params.runtime)
+  optimizer = task.create_optimizer(params.trainer.optimizer_config,
+                                    params.runtime)
   return trainer_cls(
       params,
       task,

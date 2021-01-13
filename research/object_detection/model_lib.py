@@ -643,8 +643,9 @@ def create_model_fn(detection_model_fn, configs, hparams=None, use_tpu=False,
             min_score_thresh=eval_config.min_score_threshold,
             use_normalized_coordinates=False,
             keypoint_edges=keypoint_edges or None,
-            img_export_dir=eval_config.visualization_export_dir,
-            keep_img_id_for_img_export=eval_config.keep_image_id_for_visualization_export)
+            viz_export_dir=eval_config.visualization_export_dir,
+            keep_img_id_for_viz_export=
+              eval_config.keep_image_id_for_visualization_export)
         vis_metric_ops = eval_metric_op_vis.get_estimator_eval_metric_ops(
             eval_dict)
 

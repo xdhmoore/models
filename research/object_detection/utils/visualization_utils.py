@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import abc
 import collections
+import pathlib
 # Set headless-friendly backend.
 import matplotlib; matplotlib.use('Agg')  # pylint: disable=multiple-statements
 import matplotlib.pyplot as plt  # pylint: disable=g-import-not-at-top
@@ -1356,8 +1357,8 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
                use_normalized_coordinates=True,
                summary_name_prefix='evaluation_image',
                keypoint_edges=None,
-               img_export_dir=None,
-               keep_img_id_for_img_export=False):
+               viz_export_dir=None,
+               keep_img_id_for_viz_export=False):
     """Creates an EvalMetricOpsVisualization.
 
     Args:
@@ -1372,10 +1373,10 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
       keypoint_edges: A list of tuples with keypoint indices that specify which
         keypoints should be connected by an edge, e.g. [(0, 1), (2, 4)] draws
         edges from keypoint 0 to 1 and from keypoint 2 to 4.
-      img_export_dir: the output directory to which images are written.  If this is
-        empty (default), then images are not exported
-      keep_img_id_for_img_export: whether or not to use the source_id in the file names
-        of the saved image visualizations
+      viz_export_dir: the output directory to which viz images are written.
+        If this is empty (default), then images are not exported
+      keep_img_id_for_viz_export: whether or not to use the source_id in the
+        file names of the saved image visualizations
     """
 
     self._category_index = category_index
@@ -1386,30 +1387,47 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
     self._summary_name_prefix = summary_name_prefix
     self._keypoint_edges = keypoint_edges
     self._images = []
-    self._img_export_dir = img_export_dir
-    self._keep_img_id_for_img_export = keep_img_id_for_img_export
+    self._viz_export_dir = viz_export_dir
+    self._keep_img_id_for_viz_export = keep_img_id_for_viz_export
     self._img_export_counter = 0
+    self._EXPORT_VISUALIZATIONS_NAME = 'EXPORT_VISUALIZATIONS'
 
   def clear(self):
     self._images = []
 
   def add_images(self, images, source_id):
-    """Store a list of images, each with shape [1, H, W, C]."""
+    """Store a list of images for export
 
-    if self._img_export_dir:
-      Path(self._img_export_dir).mkdir(exist_ok=True)
+    Store `self._max_examples_to_draw` images for TensorBoard. If
+    `self._viz_export_dir` is set, save *all* images to disk. Note that
+    storing `self._max_examples_to_draw` images for export to TensorBoard
+    means that they are all stored in memory as all the metric update_op's
+    are run until the final value_op is run and they are saved.
+
+    Args:
+      images: a list of images, each with shape [1, H, 2*W, C]
+      source_id: The source_id of the image if it is to be used in the export
+        file names, '' otherwise.
+    """
+
+    if self._viz_export_dir:
+      pathlib.Path(self._viz_export_dir).mkdir(exist_ok=True, parents=True)
 
       if source_id:
-        file_name = f"export-{source_id.decode('utf-8')}-{self._img_export_counter}.png"
+        counter = self._img_export_counter
+        file_name = f"export-{source_id.decode('utf-8')}-{counter}.png"
       else:
         file_name = f"export-{self._img_export_counter}.png"
 
-      export_path = Path(self._img_export_dir, file_name)
+      export_path = pathlib.Path(self._viz_export_dir, file_name)
 
-      save_image_array_as_png(np.squeeze(images, axis=(0,1)), str(export_path))
-      # TODO Is this safe? Best I can tell, this eval code is never distributed
-      # across multiple machines, but it may be run multiple times & reset the 
-      # counter during multiple evals during train_and_eval
+      save_image_array_as_png(np.squeeze(images[0], axis=0), str(export_path))
+
+      # TODO(xdhmoore) The old code used the batch index in the file name, but
+      # I was unable to figure out how to get that here. I tried to use the
+      # current EVAL_STEP, but was unable to get that either. I'm not sure if
+      # using self._img_export_counter is thread-safe...
+
       self._img_export_counter += 1
 
     if len(self._images) >= self._max_examples_to_draw:
@@ -1469,7 +1487,7 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
       groundtruth. Each `value_op` holds the tf.summary.image string for a given
       image.
     """
-    if self._max_examples_to_draw == 0:
+    if self._max_examples_to_draw == 0 and not self._viz_export_dir:
       return {}
     images = self.images_from_evaluation_dict(eval_dict)
 
@@ -1489,25 +1507,36 @@ class EvalMetricOpsVisualization(six.with_metaclass(abc.ABCMeta, object)):
           lambda: tf.constant(''))
 
     source_id = ''
-    if self._img_export_dir and self._keep_img_id_for_img_export:
+    if self._viz_export_dir and self._keep_img_id_for_viz_export:
       if fields.InputDataFields.source_id not in eval_dict:
-        raise LookupError("eval_config.keep_image_id_for_visualization_export was "
-          "set but source_id is not available. Make sure that "
+        raise LookupError("eval_config.keep_image_id_for_visualization_export "
+          "was set but source_id is not available. Make sure that "
           "eval_input_reader.include_source_id is set to true in the config.")
       source_id = eval_dict[fields.InputDataFields.source_id][0]
 
     if tf.executing_eagerly():
-      update_op = self.add_images([[images[0]]], source_id) # TODO shouldn't this be [images[0]]?
+
+      # TODO(xdhmoore) I think this first argument has one too many nested
+      # lists, and instead should be [images[0]], but I'm not running eager
+      # execution currently so I'm not able to test it. Also, add_images()
+      # doesn't return anything, so update_op may be incorrect here.
+
+      update_op = self.add_images([[images[0]]], source_id)
       image_tensors = get_images()
     else:
       update_op = tf.py_func(self.add_images, [[images[0]], source_id], [])
       image_tensors = tf.py_func(
           get_images, [], [tf.uint8] * self._max_examples_to_draw)
     eval_metric_ops = {}
-    for i, image in enumerate(image_tensors):
-      summary_name = self._summary_name_prefix + '/' + str(i)
-      value_op = image_summary_or_default_string(summary_name, image)
-      eval_metric_ops[summary_name] = (value_op, update_op)
+    if type(image_tensors) in (list, tuple):
+      for i, image in enumerate(image_tensors):
+        summary_name = self._summary_name_prefix + '/' + str(i)
+        value_op = image_summary_or_default_string(summary_name, image)
+        eval_metric_ops[summary_name] = (value_op, update_op)
+    else:
+      # If self._max_examples_to_draw is 0, there will be no fetched tf summary
+      # ops to trigger the add_images ops/exports. So we add the op explicitly:
+      eval_metric_ops[self._EXPORT_VISUALIZATIONS_NAME] = (image_tensors, update_op)
     return eval_metric_ops
 
   @abc.abstractmethod
@@ -1537,8 +1566,8 @@ class VisualizeSingleFrameDetections(EvalMetricOpsVisualization):
                use_normalized_coordinates=True,
                summary_name_prefix='Detections_Left_Groundtruth_Right',
                keypoint_edges=None,
-               img_export_dir=None,
-               keep_img_id_for_img_export=False):
+               viz_export_dir=None,
+               keep_img_id_for_viz_export=False):
     super(VisualizeSingleFrameDetections, self).__init__(
         category_index=category_index,
         max_examples_to_draw=max_examples_to_draw,
@@ -1547,8 +1576,8 @@ class VisualizeSingleFrameDetections(EvalMetricOpsVisualization):
         use_normalized_coordinates=use_normalized_coordinates,
         summary_name_prefix=summary_name_prefix,
         keypoint_edges=keypoint_edges,
-        img_export_dir=img_export_dir,
-        keep_img_id_for_img_export=keep_img_id_for_img_export)
+        viz_export_dir=viz_export_dir,
+        keep_img_id_for_viz_export=keep_img_id_for_viz_export)
 
   def images_from_evaluation_dict(self, eval_dict):
     return draw_side_by_side_evaluation_image(eval_dict, self._category_index,

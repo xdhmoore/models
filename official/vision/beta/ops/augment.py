@@ -18,9 +18,10 @@ AutoAugment Reference: https://arxiv.org/abs/1805.09501
 RandAugment Reference: https://arxiv.org/abs/1909.13719
 """
 import math
+from typing import Any, List, Optional, Text, Tuple, Iterable
 
+import numpy as np
 import tensorflow as tf
-from typing import Any, Dict, List, Optional, Text, Tuple
 
 from tensorflow.python.keras.layers.preprocessing import image_preprocessing as image_ops
 
@@ -732,43 +733,80 @@ class AutoAugment(ImageAugment):
 
   def __init__(self,
                augmentation_name: Text = 'v0',
-               policies: Optional[Dict[Text, Any]] = None,
+               policies: Optional[Iterable[Iterable[Tuple[Text, float,
+                                                          float]]]] = None,
                cutout_const: float = 100,
                translate_const: float = 250):
     """Applies the AutoAugment policy to images.
 
     Args:
       augmentation_name: The name of the AutoAugment policy to use. The
-        available options are `v0` and `test`. `v0` is the policy used for all
+        available options are `v0`, `test`, `reduced_cifar10`, `svhn` and
+        `reduced_imagenet`. `v0` is the policy used for all
         of the results in the paper and was found to achieve the best results on
         the COCO dataset. `v1`, `v2` and `v3` are additional good policies found
         on the COCO dataset that have slight variation in what operations were
         used during the search procedure along with how many operations are
-        applied in parallel to a single image (2 vs 3).
+        applied in parallel to a single image (2 vs 3). Make sure to set
+        `policies` to `None` (the default) if you want to set options using
+        `augmentation_name`.
       policies: list of lists of tuples in the form `(func, prob, level)`,
         `func` is a string name of the augmentation function, `prob` is the
-        probability of applying the `func` operation, `level` is the input
-        argument for `func`.
+        probability of applying the `func` operation, `level` (or magnitude) is
+        the input argument for `func`. For example:
+        ```
+        [[('Equalize', 0.9, 3), ('Color', 0.7, 8)],
+         [('Invert', 0.6, 5), ('Rotate', 0.2, 9), ('ShearX', 0.1, 2)], ...]
+        ```
+        The outer-most list must be 3-d. The number of operations in a
+        sub-policy can vary from one sub-policy to another.
+        If you provide `policies` as input, any option set with
+        `augmentation_name` will get overriden as they are mutually exclusive.
       cutout_const: multiplier for applying cutout.
       translate_const: multiplier for applying translation.
+
+    Raises:
+      ValueError if `augmentation_name` is unsupported.
     """
     super(AutoAugment, self).__init__()
 
-    if policies is None:
-      self.available_policies = {
-          'v0': self.policy_v0(),
-          'test': self.policy_test(),
-          'simple': self.policy_simple(),
-      }
-
-    if augmentation_name not in self.available_policies:
-      raise ValueError(
-          'Invalid augmentation_name: {}'.format(augmentation_name))
-
     self.augmentation_name = augmentation_name
-    self.policies = self.available_policies[augmentation_name]
     self.cutout_const = float(cutout_const)
     self.translate_const = float(translate_const)
+    self.available_policies = {
+        'v0': self.policy_v0(),
+        'test': self.policy_test(),
+        'simple': self.policy_simple(),
+        'reduced_cifar10': self.policy_reduced_cifar10(),
+        'svhn': self.policy_svhn(),
+        'reduced_imagenet': self.policy_reduced_imagenet(),
+    }
+
+    if not policies:
+      if augmentation_name not in self.available_policies:
+        raise ValueError(
+            'Invalid augmentation_name: {}'.format(augmentation_name))
+
+      self.policies = self.available_policies[augmentation_name]
+
+    else:
+      self._check_policy_shape(policies)
+      self.policies = policies
+
+  def _check_policy_shape(self, policies):
+    """Checks dimension and shape of the custom policy.
+
+    Args:
+      policies: List of list of tuples in the form `(func, prob, level)`. Must
+        have shape of `(:, :, 3)`.
+
+    Raises:
+      ValueError if the shape of `policies` is unexpected.
+    """
+    in_shape = np.array(policies).shape
+    if len(in_shape) != 3 or in_shape[-1:] != (3,):
+      raise ValueError('Wrong shape detected for custom policy. Expected '
+                       '(:, :, 3) but got {}.'.format(in_shape))
 
   def distort(self, image: tf.Tensor) -> tf.Tensor:
     """Applies the AutoAugment policy to `image`.
@@ -799,9 +837,15 @@ class AutoAugment(ImageAugment):
     tf_policies = []
     for policy in self.policies:
       tf_policy = []
+      assert_ranges = []
       # Link string name to the correct python function and make sure the
       # correct argument is passed into that function.
       for policy_info in policy:
+        _, prob, level = policy_info
+        assert_ranges.append(tf.Assert(tf.less_equal(prob, 1.), [prob]))
+        assert_ranges.append(
+            tf.Assert(tf.less_equal(level, int(_MAX_LEVEL)), [level]))
+
         policy_info = list(policy_info) + [
             replace_value, self.cutout_const, self.translate_const
         ]
@@ -817,7 +861,8 @@ class AutoAugment(ImageAugment):
 
         return final_policy
 
-      tf_policies.append(make_final_policy(tf_policy))
+      with tf.control_dependencies(assert_ranges):
+        tf_policies.append(make_final_policy(tf_policy))
 
     image = select_and_apply_random_policy(tf_policies, image)
     image = tf.cast(image, dtype=input_image_type)
@@ -865,6 +910,132 @@ class AutoAugment(ImageAugment):
         [('Posterize', 0.8, 2), ('Solarize', 0.6, 10)],
         [('Solarize', 0.6, 8), ('Equalize', 0.6, 1)],
         [('Color', 0.8, 6), ('Rotate', 0.4, 5)],
+    ]
+    return policy
+
+  @staticmethod
+  def policy_reduced_cifar10():
+    """Autoaugment policy for reduced CIFAR-10 dataset.
+
+    Result is from the AutoAugment paper: https://arxiv.org/abs/1805.09501.
+
+    Each tuple is an augmentation operation of the form
+    (operation, probability, magnitude). Each element in policy is a
+    sub-policy that will be applied sequentially on the image.
+
+    Returns:
+      the policy.
+    """
+    policy = [
+        [('Invert', 0.1, 7), ('Contrast', 0.2, 6)],
+        [('Rotate', 0.7, 2), ('TranslateX', 0.3, 9)],
+        [('Sharpness', 0.8, 1), ('Sharpness', 0.9, 3)],
+        [('ShearY', 0.5, 8), ('TranslateY', 0.7, 9)],
+        [('AutoContrast', 0.5, 8), ('Equalize', 0.9, 2)],
+        [('ShearY', 0.2, 7), ('Posterize', 0.3, 7)],
+        [('Color', 0.4, 3), ('Brightness', 0.6, 7)],
+        [('Sharpness', 0.3, 9), ('Brightness', 0.7, 9)],
+        [('Equalize', 0.6, 5), ('Equalize', 0.5, 1)],
+        [('Contrast', 0.6, 7), ('Sharpness', 0.6, 5)],
+        [('Color', 0.7, 7), ('TranslateX', 0.5, 8)],
+        [('Equalize', 0.3, 7), ('AutoContrast', 0.4, 8)],
+        [('TranslateY', 0.4, 3), ('Sharpness', 0.2, 6)],
+        [('Brightness', 0.9, 6), ('Color', 0.2, 8)],
+        [('Solarize', 0.5, 2), ('Invert', 0.0, 3)],
+        [('Equalize', 0.2, 0), ('AutoContrast', 0.6, 0)],
+        [('Equalize', 0.2, 8), ('Equalize', 0.6, 4)],
+        [('Color', 0.9, 9), ('Equalize', 0.6, 6)],
+        [('AutoContrast', 0.8, 4), ('Solarize', 0.2, 8)],
+        [('Brightness', 0.1, 3), ('Color', 0.7, 0)],
+        [('Solarize', 0.4, 5), ('AutoContrast', 0.9, 3)],
+        [('TranslateY', 0.9, 9), ('TranslateY', 0.7, 9)],
+        [('AutoContrast', 0.9, 2), ('Solarize', 0.8, 3)],
+        [('Equalize', 0.8, 8), ('Invert', 0.1, 3)],
+        [('TranslateY', 0.7, 9), ('AutoContrast', 0.9, 1)],
+    ]
+    return policy
+
+  @staticmethod
+  def policy_svhn():
+    """Autoaugment policy for SVHN dataset.
+
+    Result is from the AutoAugment paper: https://arxiv.org/abs/1805.09501.
+
+    Each tuple is an augmentation operation of the form
+    (operation, probability, magnitude). Each element in policy is a
+    sub-policy that will be applied sequentially on the image.
+
+    Returns:
+      the policy.
+    """
+    policy = [
+        [('ShearX', 0.9, 4), ('Invert', 0.2, 3)],
+        [('ShearY', 0.9, 8), ('Invert', 0.7, 5)],
+        [('Equalize', 0.6, 5), ('Solarize', 0.6, 6)],
+        [('Invert', 0.9, 3), ('Equalize', 0.6, 3)],
+        [('Equalize', 0.6, 1), ('Rotate', 0.9, 3)],
+        [('ShearX', 0.9, 4), ('AutoContrast', 0.8, 3)],
+        [('ShearY', 0.9, 8), ('Invert', 0.4, 5)],
+        [('ShearY', 0.9, 5), ('Solarize', 0.2, 6)],
+        [('Invert', 0.9, 6), ('AutoContrast', 0.8, 1)],
+        [('Equalize', 0.6, 3), ('Rotate', 0.9, 3)],
+        [('ShearX', 0.9, 4), ('Solarize', 0.3, 3)],
+        [('ShearY', 0.8, 8), ('Invert', 0.7, 4)],
+        [('Equalize', 0.9, 5), ('TranslateY', 0.6, 6)],
+        [('Invert', 0.9, 4), ('Equalize', 0.6, 7)],
+        [('Contrast', 0.3, 3), ('Rotate', 0.8, 4)],
+        [('Invert', 0.8, 5), ('TranslateY', 0.0, 2)],
+        [('ShearY', 0.7, 6), ('Solarize', 0.4, 8)],
+        [('Invert', 0.6, 4), ('Rotate', 0.8, 4)],
+        [('ShearY', 0.3, 7), ('TranslateX', 0.9, 3)],
+        [('ShearX', 0.1, 6), ('Invert', 0.6, 5)],
+        [('Solarize', 0.7, 2), ('TranslateY', 0.6, 7)],
+        [('ShearY', 0.8, 4), ('Invert', 0.8, 8)],
+        [('ShearX', 0.7, 9), ('TranslateY', 0.8, 3)],
+        [('ShearY', 0.8, 5), ('AutoContrast', 0.7, 3)],
+        [('ShearX', 0.7, 2), ('Invert', 0.1, 5)],
+    ]
+    return policy
+
+  @staticmethod
+  def policy_reduced_imagenet():
+    """Autoaugment policy for reduced ImageNet dataset.
+
+    Result is from the AutoAugment paper: https://arxiv.org/abs/1805.09501.
+
+    Each tuple is an augmentation operation of the form
+    (operation, probability, magnitude). Each element in policy is a
+    sub-policy that will be applied sequentially on the image.
+
+    Returns:
+      the policy.
+    """
+    policy = [
+        [('Posterize', 0.4, 8), ('Rotate', 0.6, 9)],
+        [('Solarize', 0.6, 5), ('AutoContrast', 0.6, 5)],
+        [('Equalize', 0.8, 8), ('Equalize', 0.6, 3)],
+        [('Posterize', 0.6, 7), ('Posterize', 0.6, 6)],
+        [('Equalize', 0.4, 7), ('Solarize', 0.2, 4)],
+        [('Equalize', 0.4, 4), ('Rotate', 0.8, 8)],
+        [('Solarize', 0.6, 3), ('Equalize', 0.6, 7)],
+        [('Posterize', 0.8, 5), ('Equalize', 1.0, 2)],
+        [('Rotate', 0.2, 3), ('Solarize', 0.6, 8)],
+        [('Equalize', 0.6, 8), ('Posterize', 0.4, 6)],
+        [('Rotate', 0.8, 8), ('Color', 0.4, 0)],
+        [('Rotate', 0.4, 9), ('Equalize', 0.6, 2)],
+        [('Equalize', 0.0, 7), ('Equalize', 0.8, 8)],
+        [('Invert', 0.6, 4), ('Equalize', 1.0, 8)],
+        [('Color', 0.6, 4), ('Contrast', 1.0, 8)],
+        [('Rotate', 0.8, 8), ('Color', 1.0, 2)],
+        [('Color', 0.8, 8), ('Solarize', 0.8, 7)],
+        [('Sharpness', 0.4, 7), ('Invert', 0.6, 8)],
+        [('ShearX', 0.6, 5), ('Equalize', 1.0, 9)],
+        [('Color', 0.4, 0), ('Equalize', 0.6, 3)],
+        [('Equalize', 0.4, 7), ('Solarize', 0.2, 4)],
+        [('Solarize', 0.6, 5), ('AutoContrast', 0.6, 5)],
+        [('Invert', 0.6, 4), ('Equalize', 1.0, 8)],
+        [('Color', 0.6, 4), ('Contrast', 1.0, 8)],
+        [('Equalize', 0.8, 8), ('Equalize', 0.6, 3)]
     ]
     return policy
 
