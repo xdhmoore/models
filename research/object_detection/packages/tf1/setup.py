@@ -3,9 +3,20 @@ import os
 from setuptools import find_packages
 from setuptools import setup
 
-REQUIRED_PACKAGES = ['pillow', 'lxml', 'matplotlib', 'Cython',
-                     'contextlib2', 'tf-slim', 'six', 'pycocotools', 'lvis',
-                     'scipy', 'pandas']
+REQUIRED_PACKAGES = [
+    'pillow',
+    'lxml',
+    'matplotlib',
+    'Cython',
+    'contextlib2',
+    'tf-slim',
+    'six',
+    'pycocotools',
+    'lvis',
+    'scipy',
+    'pandas',
+    'opencv-python-headless==4.2.0.34'
+]
 
 setup(
     name='object_detection',

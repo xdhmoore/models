@@ -40,6 +40,7 @@ from object_detection.utils import shape_utils
 from object_detection.utils import variables_helper
 from object_detection.utils import visualization_utils as vis_utils
 
+
 # pylint: disable=g-import-not-at-top
 try:
   from tensorflow.contrib import learn as contrib_learn

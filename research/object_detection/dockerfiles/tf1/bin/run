@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# TODO use zsh
+
+DIR="$(dirname "$(readlink -f "$0")")"
+# TODO different error message if an invalid command is given.
+
+[[ -z "$1" || ! -x "${DIR}/run-${1}" ]] && echo "Please specify a command to run." >&2 && exit 1;
+
+cmd=$1
+shift
+
+exec "${DIR}/run-${cmd}" "$@"
+

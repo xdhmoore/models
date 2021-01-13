@@ -1,0 +1,35 @@
+{
+    // Run on host first
+    "initializeCommand": "cd research && protoc object_detection/protos/*.proto --python_out=.",
+
+
+    //"dockerComposeFile": "research/object_detection/dockerfiles/tf1/docker-compose.yml",
+    "dockerFile": "research/object_detection/dockerfiles/tf1/Dockerfile",
+    "context": "research",
+
+    "mounts": [
+        // TODO change consistency settings to improve performance?
+        // TODO use env vars to set these source and model directories, like TFM_MODEL_DIR, TFM_DATA_DIR
+        "type=bind,src=/home/uuster/model_dir,dst=/model_dir,consistency=delegated",
+        "type=bind,src=/home/uuster/tf_data,dst=/data,readonly", 
+    ],
+    // TODO change consistency settings to improve performance?
+    // TODO use env vars to set these source and model directories, like TFM_MODEL_DIR, TFM_DATA_DIR, PWD?
+    "workspaceMount": "type=bind,src=/home/uuster/tensorflow_models,dst=/home/tensorflow/models",
+    "workspaceFolder": "/home/tensorflow/models",
+
+    "extensions": [
+        // Necessary?
+        "ms-python.python", "ms-python.vscode-pylance", "ms-azuretools.vscode-docker",
+        // Optional
+        "alefragnani.bookmarks", "tx19.let-me-google-that-for-you"
+    ],
+
+    // TODO this doesnt display errors when they occur
+    // TODO should some of this happen on every update, not just create?
+    // TODO this really slows down the startup time. Is there a way to download the external requirements first in docker-land? Or use a mounted pip cache?
+    // TODO use env variable for path
+    "postCreateCommand": "env DEV_MODE=1 ${containerWorkspaceFolder}/research/object_detection/dockerfiles/tf1/bin/post-docker-create",
+
+
+}
