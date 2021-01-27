@@ -125,6 +125,8 @@ Should I implement a child class of EvalMetricOpsVisualization that saves to fil
 [ ] get debugger to use local files, not site-packages
 [ ] print anchor boxes?
 [ ] print progress bar or simiar for eval
+[ ] compare classification results to just classifying all images as sharks. (If 70% of images are sharks, classifying all
+    as sharks gives you 70% accuracy, so your results should be better than that.)
 
 
 ### Someday Maybe ###
@@ -171,3 +173,30 @@ Should I implement a child class of EvalMetricOpsVisualization that saves to fil
     https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin?hl=uk
 * Make a new model_dir each time by default
 * fix this issue by tweaking to log the source_id: https://github.com/tensorflow/models/issues/8712
+
+TODO
+*  Make sure learning rates are both the same even without setting max steps
+
+### Experiments ###
+
+Compare:
+* training w/no-labels data vs w/o, performance on no-label items vs reg items
+* different sizes of input images
+* different anchor generation settings?
+* Mobilenet1 vs Mobilenet2? vs Faster R-CNN
+* Speed of training for diff configurations/detectors
+* Number of Epochs vs accuracy
+* without batch normalization
+* change classification_weight==1 and localizatin_weight==1
+* change post_processing?
+* change optimizer
+* try different batch sizes
+* different find tune checkpoints
+* change data_augmentation_options
+* train locally vs on 127x31 vs docker machine vs colab
+
+Metrics:
+* mAP
+* break down different false positive categories
+* break down different image characteristics
+

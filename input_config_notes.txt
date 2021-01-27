@@ -1,0 +1,150 @@
+Input Options:
+
+* 4030 total
+    * 200 final
+    * 3830 CV
+        * k-fold, k=5 split each section:
+            5 files of 766 each, recombined into A, B, C, D, E
+
+* Train with eval:
+    * Train (train data)
+        * num_epochs = 3
+        * 3064 records via file size
+    * TrainEval (train data)
+        * num_epochs = 1 default
+        * 766 records via sample_1_of_n_eval_on_train_examples = 4
+* Eval (validation data):
+    * num_epochs = 1 default
+    * 766 records via file size
+
+* Eval (final test data):
+    * num_epochs = 1 default
+    * 200 records via file size
+
+* Read input of size N over and over until you hit X steps:
+  * num epochs E: X / N
+  * Train_and_eval settings:
+    * train: train_config.num_steps
+    * eval: 
+        * broken: eval_config.num_examples = X * batch_size?
+        * set sample_1_of_n_examples = see alg below
+        
+  * Eval setting:
+    * e
+
+* Read input of size N until E epochs are hit:
+  * in theory (if batch size == 1?), X = N * E
+  * What about batch size != 1?
+    * X = N * E ??
+    * X = (N/B) * E??
+  * Train_and_eval settings:
+    * train: train_input_reader.num_epochs = 3?
+    * eval: sample_1_of_n_eval_on_train_examples = 4
+  * Eval (train):
+    * 
+  * Eval (validation):
+    * 
+  * Eval (final):
+    *
+
+* Read input of size N until M minutes are hit:
+    * num epochs E: depends
+    *
+
+# TODO
+* Apply "Train metrics" option below to the stuff above
+* Apply algorithm to hook up num_examples or num_eval_steps via sample_1_of_n_examples
+
+* options for implementing train+valid+test
+    * Train metrics::
+        * train = train_and_eval w/ eval_on_train
+        * valid = eval w/ validation data (or cross-validation held-out-group)
+        * test = eval w/ test data
+    * Eval metrics (current):
+        * train = train_and_eval w/ validation data
+        * valid = eval w/ validation data (or...cross-validation held-out-group)
+        * test = eval w/ test data
+    * No metrics:
+        * train = train_and_eval w/ no eval or dummy eval
+        * valid = eval w/ validation data (or...cross-validation held-out-group)
+        * test = eval w/ test data
+
+* sharding options?
+
+
+Questions:
+    * How big an E can I afford, timewise?
+    * When it says sample_1_of_n_examples==1, is that with replacement? If it's not, what is that called?
+    * Would I gain performance by using sample_1_of_n_examples?
+    * Aside from all this, could I gain performance from sharding input files?
+    * Use eval_on_train during train_and_eval to get regular reports of progress
+        on training progress using training data? But is it possible to do this w/o using 1 whole epoch?
+        In model_lib it seems to hardcode it to 1 epoch. Can use sample_1_of_n_examples to use less.
+
+Misc Notes:
+
+Calculating sample_1_of_n_examples setting:
+N: total images
+n: sample_1_of_n_examples
+r: num of images I want to use
+
+To find n, equation is:
+N/r <= n <  N/(r-1)
+Algorithm:
+    n = ceil(N/r)
+    if n >= N/(r-1):
+        raise Error("There is no valid shard-based sampling which results in {r} samples from {N} samples")
+
+
+All of the below is wrong cause the eq is wrong. The right one is:
+ceil(N/n) because:
+    def fn(N, n):
+        return len([i for i in range(N) if i % n == 0]) == (ceil(N/n))
+    [fn(N, 3) for N in range(0, 20)]
+
+Right:
+        ceil(N/n) = r
+        N/n + a = r      0 <= a < 1
+        N/n - r + a = 0
+        N/n - r = -a
+        r - N/n = a
+        ==============
+        0 <= r - N/n
+        N/n <= r
+        N <= rn
+        N/r <=  n ************
+        ==============
+        r - N/n < 1
+        r < 1 + N/n
+        r - 1 < N/n
+        rn - n < N
+        n(r - 1) < N
+        n < N/(r - 1)  ************
+        =======================
+        N/r <= n <  N/(r-1) *******************
+        =================
+
+
+        N/(r-1) - N/r
+
+Wrong:
+        floor(N / n) + 1 = r
+        r - 1 = floor(N/n)
+        r - 1 + a = N/n                 0 <= a < 1
+        a = (N/n) - r + 1
+
+        0 <= (N/n) - r + 1 < 1
+==================================================================
+        0 <= (N/n) - r + 1
+        r - 1 <= N/n
+        1 <= N/n(r-1)
+        n <= N/(r-1)
+
+==================================================================
+        1 > (N/n) - r + 1
+        r > N/n
+        1/r < n/N
+        N/r < n
+
+# RESULT:
+        N/r < n <= N/(r-1)

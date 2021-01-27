@@ -2,6 +2,10 @@
 
 set -e
 
+echo "this is a test of stdout"
+echo "this is a test of sterr" >&2
+
+
 DIR="$(dirname "$(readlink -f "$0")")"
 # TODO maybe should define a global $TFM variable pointing to tensorflow/models...
 RESEARCH_DIR="${DIR}/../../../.."
@@ -13,9 +17,6 @@ RESEARCH_DIR="${DIR}/../../../.."
 if [[ -n $DEV_MODE ]]; then
     python -m pip install pylint debugpy mypy
 fi
-
-echo "this is a test of stdout"
-echo "this is a test of sterr" >&2
 
 # TODO run this from run script?
 # TODO is there a way to avoid dirtying git by copying setup.py over other setup.py?

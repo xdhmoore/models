@@ -58,6 +58,15 @@ message InputReader {
   // only 1/3 of your data into your model, set `sample_1_of_n_examples` to 3.
   // This is particularly useful for evaluation, where you might not prefer to
   // evaluate all of your samples.
+  // If this configuration value is n, the data is sampled by taking all indices
+  // i such that i % n == 0. If N is the total number of examples and r is the 
+  // desired number of examples after sampling, a config value n that produces the given
+  // desired number r from the given total number N can be calculated by finding
+  // an integer n that satisfies the following inequalities:
+  // N/r <= n < N/(r-1)
+  // Note that there may not be an valid integer n that satisfies those
+  // inequalities, in which case a nearby value can be chosen to approximate r.
+  // TODO is the above true for TF2?
   optional uint32 sample_1_of_n_examples = 22 [default = 1];
 
   // Number of file shards to read in parallel.

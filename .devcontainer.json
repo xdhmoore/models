@@ -15,14 +15,19 @@
     ],
     // TODO change consistency settings to improve performance?
     // TODO use env vars to set these source and model directories, like TFM_MODEL_DIR, TFM_DATA_DIR, PWD?
-    "workspaceMount": "type=bind,src=/home/uuster/tensorflow_models,dst=/home/tensorflow/models",
+    "workspaceMount": "type=bind,src=/home/uuster/shark-detection/tensorflow/models,dst=/home/tensorflow/models",
     "workspaceFolder": "/home/tensorflow/models",
 
     "extensions": [
         // Necessary?
-        "ms-python.python", "ms-python.vscode-pylance", "ms-azuretools.vscode-docker",
+        "ms-python.python", "ms-azuretools.vscode-docker",
         // Optional
-        "alefragnani.bookmarks", "tx19.let-me-google-that-for-you"
+        "alefragnani.bookmarks", "tx19.let-me-google-that-for-you",
+
+        // Putting this at the end to increase the likelihood that ms-python.python, which is a
+        // dependency, finishes loading first. Haven't investigated, but I suspect this may be
+        // a vs code bug...
+        "ms-python.vscode-pylance", 
     ],
 
     // TODO this doesnt display errors when they occur

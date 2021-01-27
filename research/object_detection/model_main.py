@@ -24,7 +24,6 @@ import tensorflow.compat.v1 as tf
 
 
 from object_detection import model_lib
-from object_detection.utils import visualization_utils
 
 flags.DEFINE_string(
     'model_dir', None, 'Path to output model directory '
@@ -36,12 +35,15 @@ flags.DEFINE_boolean('eval_training_data', False,
                      'If training data should be evaluated for this job. Note '
                      'that one can only use this in eval-only mode, and '
                      '`checkpoint_dir` must be supplied.')
+
+# See input_reader.proto for more info on these sample_1_of_n settings
 flags.DEFINE_integer('sample_1_of_n_eval_examples', 1, 'Will sample one of '
                      'every n eval input examples, where n is provided.')
 flags.DEFINE_integer('sample_1_of_n_eval_on_train_examples', 5, 'Will sample '
                      'one of every n train input examples for evaluation, '
                      'where n is provided. This is only used if '
                      '`eval_training_data` is True.')
+
 flags.DEFINE_string(
     'checkpoint_dir', None, 'Path to directory holding a checkpoint.  If '
     '`checkpoint_dir` is provided, this binary operates in eval-only mode, '

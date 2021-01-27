@@ -25,15 +25,19 @@ cd /home/tensorflow/models/research
 # If you don't have the 0.0.0.0 it'll only listen on localhost (local connections only) and you'll spend 3 hours confused
 #$exec python3  /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 \
 
+CONFIG=object_detection/dockerfiles/tf1/ssd_mobilenet_v1_sharks.config
+
+SAMPLE_1_OF_N_EVAL_ON_TRAIN_EXAMPLES=$(cat $CONFIG | sed -n -E 's/^ *# *HACK::sample_1_of_n_eval_on_train_examples *: *([[:digit:]]+)/\1/p')
+: ${SAMPLE_1_OF_N_EVAL_ON_TRAIN_EXAMPLES:=1}
 
 function train_and_eval {
     echo "Running train_and_eval..." >&2
     # This is a train/eval run
     exec python3 ${DEBUG:+-m debugpy --wait-for-client --listen 0.0.0.0:5678} \
         object_detection/model_main.py \
-            --pipeline_config_path=object_detection/dockerfiles/tf1/ssd_mobilenet_v1_sharks.config \
+            --pipeline_config_path=$CONFIG \
             --model_dir=/model_dir \
-            --sample_1_of_n_eval_examples=1 \
+            --sample_1_of_n_eval_on_train_examples=$SAMPLE_1_OF_N_EVAL_ON_TRAIN_EXAMPLES \
             --alsologtostderr
 }
 
