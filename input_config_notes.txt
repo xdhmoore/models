@@ -1,11 +1,5 @@
 Input Options:
 
-* 4030 total
-    * 200 final
-    * 3830 CV
-        * k-fold, k=5 split each section:
-            5 files of 766 each, recombined into A, B, C, D, E
-
 * Train with eval:
     * Train (train data)
         * num_epochs = 3
