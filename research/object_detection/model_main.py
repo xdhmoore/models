@@ -134,7 +134,7 @@ def main(unused_argv):
         eval_on_train_input_fn,
         predict_input_fn,
         train_steps,
-        eval_on_train_data=False,
+        eval_on_train_data=True, # TODO make a flag for this
         eval_hooks=None) #TODO pass in hooks
 
     #eval_specs[0].hooks.append(_RecordVisualiationsHook())
