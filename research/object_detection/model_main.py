@@ -88,7 +88,7 @@ def main(unused_argv):
     def after_run(self, run_context, run_values):
       self.counter += 1
       # TODO use configured total
-      tf.logging.info(f'Eval run {self.counter}/738')
+      tf.logging.info(f'Eval run {self.counter}/???')
       # TODO why did the one I copied from del run_values? Is this a memory thing I should be doing?
       # del run_values
       # if time.time() - self._start_time >= self._stop_after_secs:
@@ -133,11 +133,7 @@ def main(unused_argv):
         eval_input_fns,
         eval_on_train_input_fn,
         predict_input_fn,
-        train_steps,
-        eval_on_train_data=True, # TODO make a flag for this
-        eval_hooks=None) #TODO pass in hooks
-
-    #eval_specs[0].hooks.append(_RecordVisualiationsHook())
+        train_steps)
 
     # Currently only a single Eval Spec is allowed.
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])
