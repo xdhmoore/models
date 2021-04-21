@@ -112,3 +112,5 @@ research/include/
 research/protobuf_old.zip
 research/protoc-3.14.0-linux-x86_64.zip
 research/pycocotools/
+
+research/object_detection/viz_anchors/
