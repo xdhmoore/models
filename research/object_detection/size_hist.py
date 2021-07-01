@@ -80,6 +80,7 @@ def main(infilename: str, outimage: str, hist_size:float) -> None:
     axes.set_aspect(aspect=1)
     # TODO add legend for these colors
     axes.hist2d(widths, heights, 100, [(0, hist_size), (0, hist_size)])
+    # TODO instead maybe plot a where the original image 1:1 was.
     axes.plot([0, hist_size], [0, hist_size], alpha = 0.8)
     axes.set_xlabel('box widths (0 to 1)')
     axes.set_ylabel('box heights (0 to 1)')
@@ -105,6 +106,27 @@ def main(infilename: str, outimage: str, hist_size:float) -> None:
             anchorheights += [anchor[2]]
         # TODO add legend for these colors also
         axes.plot(anchorwidths, anchorheights, '.' + colors[layer_idx % len(colors)])
+
+    # 32 ^2
+    # 96 ^2
+    # 4096 X 2160
+    # TODO this isn't going to work for everything. calculate avg img height/width
+    img_height: int = 2160
+    img_width: int = 4096
+    small_threshold_x = 32 / img_width
+    small_threshold_y = 32 / img_height
+    med_threshold_x = 96 / img_width
+    med_threshold_y = 96 / img_height
+    large_threshold_x = 1e5 / img_width
+    large_threshold_y = 1e5 / img_width
+    axes.plot((small_threshold_x, small_threshold_x), (0, small_threshold_y), '-r')
+    axes.plot((0, small_threshold_x), (small_threshold_y, small_threshold_y), '-r')
+    axes.plot((med_threshold_x, med_threshold_x), (0, med_threshold_y), '-r')
+    axes.plot((0, med_threshold_x), (med_threshold_y, med_threshold_y), '-r')
+    axes.plot((large_threshold_x, large_threshold_x), (0, large_threshold_y), '-r')
+    axes.plot((0, large_threshold_x), (large_threshold_y, large_threshold_y), '-r')
+    #axes.plot(anchorwidths, anchorheights, '.' + colors[layer_idx % len(colors)])
+    #axes.plot(anchorwidths, anchorheights, '.' + colors[layer_idx % len(colors)])
 
     #fig, ax = plt.subplots(tight_layout=True)
     #hist = ax.hist2d(x, y)
@@ -157,7 +179,7 @@ if __name__ == '__main__':
     parser.add_argument('infile', metavar='infile', type=str, nargs=1, help='the name of the tf record file')
     parser.add_argument('outimage', metavar='outimage', type=str, nargs=1, help='the name of the file to write image plot to')
     #parser.add_argument('--anchorfile', type=str, help='the name of the file with anchors json data')
-    parser.add_argument('--size', type=float, help="The height/width of the square histogram, from [0,1]", default=1.0)
+    parser.add_argument('--size', '-s',type=float, help="The height/width of the square histogram, from [0,1]", default=1.0)
     # TODO handle multiple categories
     # TODO output in the 300x300px, 0-1 scale
 
